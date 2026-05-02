@@ -1,0 +1,81 @@
+{
+  "name": "ahegyes/wp-framework-woocommerce",
+  "description": "WooCommerce-specific services for plugins built on the DWS framework — settings backend, PSR-3 logger, HPOS compatibility helpers.",
+  "type": "library",
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://github.com/ahegyes/wordpress-framework",
+  "authors": [
+    {
+      "name": "Contributors",
+      "homepage": "https://github.com/ahegyes/wordpress-framework/graphs/contributors"
+    }
+  ],
+  "keywords": ["wordpress", "wordpress-plugin", "woocommerce", "framework", "settings", "logger", "hpos"],
+  "support": {
+    "issues": "https://github.com/ahegyes/wordpress-framework/issues",
+    "source": "https://github.com/ahegyes/wordpress-framework"
+  },
+
+  "require": {
+    "php": ">=8.5",
+    "ahegyes/wp-framework-core": "^2.0@dev"
+  },
+  "require-dev": {
+    "ahegyes/wordpress-configs": "dev-trunk",
+    "php-stubs/wordpress-stubs": "*",
+    "php-stubs/woocommerce-stubs": "*",
+    "phpunit/phpunit": "^13"
+  },
+
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+
+  "autoload": {
+    "psr-4": {
+      "DeepWebSolutions\\Framework\\WooCommerce\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "DeepWebSolutions\\Framework\\WooCommerce\\Tests\\": "tests/"
+    }
+  },
+
+  "scripts": {
+    "test": "@php vendor/bin/phpunit",
+    "test:unit": "@php vendor/bin/phpunit --testsuite=Unit"
+  },
+
+  "extra": {
+    "branch-alias": {
+      "dev-trunk": "2.0.x-dev"
+    },
+    "scoping-stubs": [
+      "php-stubs/wordpress-stubs",
+      "php-stubs/woocommerce-stubs"
+    ],
+    "changelogger": {
+      "versioning": "semver",
+      "changelog": "CHANGELOG.md",
+      "changes-dir": "changelog",
+      "default-type": "changed",
+      "types": {
+        "added": "Added",
+        "changed": "Changed",
+        "deprecated": "Deprecated",
+        "removed": "Removed",
+        "fixed": "Fixed",
+        "security": "Security"
+      }
+    }
+  },
+
+  "config": {
+    "allow-plugins": {
+      "composer/*": true,
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "phpstan/extension-installer": true
+    },
+    "sort-packages": true
+  }
+}
