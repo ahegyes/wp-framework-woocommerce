@@ -5,3 +5,9 @@ All notable changes to `ahegyes/wp-framework-woocommerce` are documented in this
 Pending entries live in [`changelog/`](./changelog) — add via `composer changelog:add:woocommerce` from the monorepo root. Aggregate into a release with `composer changelog:write:woocommerce`.
 
 ## 2.0.0 - unreleased
+
+### Added
+
+- **Complete rewrite of v1.** Lean library architecture: interfaces + final classes, PSR-11 throughout. PHP 8.5+, WordPress 7.0+, WooCommerce 9.5+ (HPOS-ready).
+- **WooCommerce settings backend** — implements the framework's settings backend contract against WooCommerce's native settings API.
+- **WC-aware helpers** — utilities specific to WooCommerce plugin development.

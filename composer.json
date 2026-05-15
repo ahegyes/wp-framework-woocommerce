@@ -1,6 +1,6 @@
 {
   "name": "ahegyes/wp-framework-woocommerce",
-  "description": "WooCommerce-specific services for plugins built on the DWS framework — settings backend, PSR-3 logger, HPOS compatibility helpers.",
+  "description": "WooCommerce settings backend and WC-aware helpers for plugins built on the DWS framework.",
   "type": "library",
   "license": "GPL-2.0-or-later",
   "homepage": "https://github.com/ahegyes/wordpress-framework",
@@ -10,7 +10,7 @@
       "homepage": "https://github.com/ahegyes/wordpress-framework/graphs/contributors"
     }
   ],
-  "keywords": ["wordpress", "wordpress-plugin", "woocommerce", "framework", "settings", "logger", "hpos"],
+  "keywords": ["wordpress", "wordpress-plugin", "woocommerce", "framework"],
   "support": {
     "issues": "https://github.com/ahegyes/wordpress-framework/issues",
     "source": "https://github.com/ahegyes/wordpress-framework"
@@ -22,10 +22,18 @@
   },
   "require-dev": {
     "ahegyes/wordpress-configs": "dev-trunk",
-    "php-stubs/wordpress-stubs": "*",
-    "php-stubs/woocommerce-stubs": "*",
-    "phpunit/phpunit": "^13"
+    "johnpbloch/wordpress-core": "^7.0@dev",
+    "phpunit/phpunit": "^13",
+    "wp-plugin/woocommerce": "*"
   },
+
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://repo.wp-packages.org",
+      "only": ["wp-plugin/*", "wp-theme/*"]
+    }
+  ],
 
   "minimum-stability": "dev",
   "prefer-stable": true,
@@ -50,9 +58,14 @@
     "branch-alias": {
       "dev-trunk": "2.0.x-dev"
     },
+    "installer-paths": {
+      "vendor/{$vendor}/{$name}/": [
+        "type:wordpress-plugin",
+        "type:wordpress-theme"
+      ]
+    },
     "scoping-stubs": [
-      "php-stubs/wordpress-stubs",
-      "php-stubs/woocommerce-stubs"
+      "php-stubs/wordpress-stubs"
     ],
     "changelogger": {
       "versioning": "semver",

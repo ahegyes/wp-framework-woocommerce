@@ -1,6 +1,6 @@
 # wp-framework-woocommerce
 
-WooCommerce-specific services for plugins built on the DWS framework — settings backend, PSR-3 logger, HPOS compatibility helpers.
+WooCommerce settings backend and WC-aware helpers for plugins built on the DWS framework.
 
 Part of the [DWS WordPress framework](https://github.com/ahegyes/wordpress-framework) — see the monorepo for architecture, contributing, and the rest of the package set.
 
