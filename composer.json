@@ -20,20 +20,6 @@
     "php": ">=8.5",
     "ahegyes/wp-framework-core": "^2.0@dev"
   },
-  "require-dev": {
-    "ahegyes/wordpress-configs": "dev-trunk",
-    "johnpbloch/wordpress-core": "^7.0@dev",
-    "phpunit/phpunit": "^13",
-    "wp-plugin/woocommerce": "*"
-  },
-
-  "repositories": [
-    {
-      "type": "composer",
-      "url": "https://repo.wp-packages.org",
-      "only": ["wp-plugin/*", "wp-theme/*"]
-    }
-  ],
 
   "minimum-stability": "dev",
   "prefer-stable": true,
@@ -41,17 +27,15 @@
   "autoload": {
     "psr-4": {
       "DeepWebSolutions\\Framework\\WooCommerce\\": "src/"
-    }
+    },
+    "files": [
+      "functions.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {
       "DeepWebSolutions\\Framework\\WooCommerce\\Tests\\": "tests/"
     }
-  },
-
-  "scripts": {
-    "test": "@php vendor/bin/phpunit",
-    "test:unit": "@php vendor/bin/phpunit --testsuite=Unit"
   },
 
   "extra": {
