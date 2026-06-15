@@ -51,7 +51,8 @@
       ]
     },
     "scoping-stubs": [
-      "php-stubs/wordpress-stubs"
+      "php-stubs/wordpress-stubs",
+      "php-stubs/woocommerce-stubs"
     ],
     "changelogger": {
       "versioning": "semver",
