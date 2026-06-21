@@ -255,8 +255,8 @@ final class ProductDataFieldStore {
 			return $tabs;
 		}
 
-		$tab                       = $this->tab();
-		$tabs[ $tab->slug ]        = array(
+		$tab                = $this->tab();
+		$tabs[ $tab->slug ] = array(
 			'label'    => $tab->label,
 			'target'   => $tab->slug . '_product_data',
 			'class'    => \array_merge( array( $tab->slug . '_tab' ), $this->tab_classes( $product_id ) ),
@@ -418,7 +418,7 @@ final class ProductDataFieldStore {
 					// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
 					throw new DuplicateSettingsFieldException( "Duplicate product-data meta key on tab '$tab->slug': '$meta_key'" );
 				}
-				$this->by_meta_key[ $meta_key ]                              = $field;
+				$this->by_meta_key[ $meta_key ]                                 = $field;
 				$this->by_address[ $this->address( $section->id, $field->id ) ] = $meta_key;
 			}
 		}

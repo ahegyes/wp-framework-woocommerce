@@ -69,7 +69,7 @@ final class ProductDataFieldRenderer {
 				$args['value'] = $this->checkbox_value( $value );
 				break;
 			case FieldType::Multiselect:
-				$args['name']                  = $meta_key . '[]';
+				$args['name'] = $meta_key . '[]';
 				// WooCommerce marks options selected via in_array() over the values, so the keys are irrelevant.
 				$args['value']                 = \is_array( $value ) ? $value : array();
 				$args['options']               = $this->stringify_labels( $this->options_resolver->resolve( $field->options ) );

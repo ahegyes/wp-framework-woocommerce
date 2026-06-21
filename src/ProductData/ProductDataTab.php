@@ -61,13 +61,13 @@ final readonly class ProductDataTab {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   string $slug Tab slug; the tab key and the basis of its element id and CSS class.
-	 * @param   string $label Tab label shown on the product-data tab.
-	 * @param   string $meta_key_prefix Prefix for every field's derived product-meta key.
-	 * @param   list<SettingsSection> $sections Sections grouping the tab's fields, in display order.
-	 * @param   list<string>|\Closure $classes Extra tab CSS classes, or a `(int $product_id): list<string>` closure for product-type-dependent classes.
-	 * @param   int $priority Tab position among the product-data tabs.
-	 * @param   ?callable $supports_product Product-type gate; stored as a Closure. Null applies the tab to every recognized product.
+	 * @param   string                  $slug Tab slug; the tab key and the basis of its element id and CSS class.
+	 * @param   string                  $label Tab label shown on the product-data tab.
+	 * @param   string                  $meta_key_prefix Prefix for every field's derived product-meta key.
+	 * @param   list<SettingsSection>   $sections Sections grouping the tab's fields, in display order.
+	 * @param   list<string>|\Closure   $classes Extra tab CSS classes, or a `(int $product_id): list<string>` closure for product-type-dependent classes.
+	 * @param   int                     $priority Tab position among the product-data tabs.
+	 * @param   ?callable               $supports_product Product-type gate; stored as a Closure. Null applies the tab to every recognized product.
 	 * @param   array<string, callable> $custom_renderers Renderers for non-taxonomy field types, keyed by type token; stored as Closures.
 	 *
 	 * @throws  InvalidProductDataTabException If $slug does not match the slug charset.
