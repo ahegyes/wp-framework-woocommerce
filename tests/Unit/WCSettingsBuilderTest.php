@@ -6,7 +6,7 @@ use DeepWebSolutions\Framework\Settings\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsSection;
-use DeepWebSolutions\Framework\WooCommerce\WCSettingsBuilder;
+use DeepWebSolutions\Framework\WooCommerce\SettingsPage\WCSettingsBuilder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

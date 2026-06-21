@@ -11,7 +11,7 @@ use DeepWebSolutions\Framework\WooCommerce\Exceptions\UnboundSettingsPageExcepti
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\BarWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\FooWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\LazyBindWCSettingsPage;
-use DeepWebSolutions\Framework\WooCommerce\WooCommerceSettingsBackend;
+use DeepWebSolutions\Framework\WooCommerce\SettingsPage\WooCommerceSettingsBackend;
 use PHPUnit\Framework\TestCase;
 
 final class WooCommerceSettingsBackendTest extends TestCase {

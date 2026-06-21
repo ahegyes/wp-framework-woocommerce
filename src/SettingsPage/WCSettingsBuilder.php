@@ -1,6 +1,6 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce;
+namespace DeepWebSolutions\Framework\WooCommerce\SettingsPage;
 
 use DeepWebSolutions\Framework\Settings\FieldType;
 use DeepWebSolutions\Framework\Settings\OptionsResolver;

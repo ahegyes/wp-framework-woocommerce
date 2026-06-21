@@ -2,7 +2,7 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures;
 
-use DeepWebSolutions\Framework\WooCommerce\DescriptorBackedWCSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\SettingsPage\DescriptorBackedWCSettingsPage;
 
 /**
  * A subclass bound by no other test, used to prove register_page() defers binding until the filter fires.

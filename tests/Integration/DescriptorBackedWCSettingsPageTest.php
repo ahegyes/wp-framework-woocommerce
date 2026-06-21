@@ -5,7 +5,7 @@ namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration;
 use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsSection;
-use DeepWebSolutions\Framework\WooCommerce\DescriptorBackedWCSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\SettingsPage\DescriptorBackedWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Exceptions\UnboundSettingsPageException;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\BarWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\FooWCSettingsPage;
