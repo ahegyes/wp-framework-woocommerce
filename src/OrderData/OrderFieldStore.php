@@ -3,13 +3,13 @@
 namespace DeepWebSolutions\Framework\WooCommerce\OrderData;
 
 use Automattic\WooCommerce\Utilities\OrderUtil;
-use DeepWebSolutions\Framework\Settings\Exceptions\DuplicateSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\FieldProcessor;
-use DeepWebSolutions\Framework\Settings\FieldRenderer;
 use DeepWebSolutions\Framework\Settings\ObjectField\Exceptions\InvalidObjectMetaBoxException;
 use DeepWebSolutions\Framework\Settings\ObjectField\ObjectFieldStoreInterface;
 use DeepWebSolutions\Framework\Settings\ObjectField\ValueObjects\ObjectMetaBox;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
+use DeepWebSolutions\Framework\Settings\Schema\FieldRenderer;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 
 /**
  * WooCommerce-order object-field store: an order meta box plus per-object meta CRUD.

@@ -2,16 +2,16 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration;
 
-use DeepWebSolutions\Framework\Settings\Exceptions\DuplicateSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\Exceptions\InvalidSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsPage;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsSection;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
+use DeepWebSolutions\Framework\WooCommerce\Backend\WooCommerceSettingsBackend;
 use DeepWebSolutions\Framework\WooCommerce\Exceptions\UnboundSettingsPageException;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\BarWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\FooWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\LazyBindWCSettingsPage;
-use DeepWebSolutions\Framework\WooCommerce\SettingsPage\WooCommerceSettingsBackend;
 use PHPUnit\Framework\TestCase;
 
 final class WooCommerceSettingsBackendTest extends TestCase {

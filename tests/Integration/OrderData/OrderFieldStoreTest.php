@@ -3,14 +3,14 @@
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration\OrderData;
 
 use Automattic\WooCommerce\Utilities\OrderUtil;
-use DeepWebSolutions\Framework\Settings\Exceptions\DuplicateSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\FieldProcessor;
-use DeepWebSolutions\Framework\Settings\FieldRenderer;
-use DeepWebSolutions\Framework\Settings\FieldType;
 use DeepWebSolutions\Framework\Settings\ObjectField\Exceptions\InvalidObjectMetaBoxException;
 use DeepWebSolutions\Framework\Settings\ObjectField\ValueObjects\ObjectMetaBox;
-use DeepWebSolutions\Framework\Settings\OptionsResolver;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
+use DeepWebSolutions\Framework\Settings\Schema\FieldRenderer;
+use DeepWebSolutions\Framework\Settings\Schema\FieldType;
+use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderFieldStore;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;

@@ -2,10 +2,10 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration;
 
-use DeepWebSolutions\Framework\Settings\Exceptions\DuplicateSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\Exceptions\InvalidSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsSection;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldStore;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataTab;
 use PHPUnit\Framework\TestCase;

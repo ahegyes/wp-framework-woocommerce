@@ -1,12 +1,12 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce\SettingsPage;
+namespace DeepWebSolutions\Framework\WooCommerce\Backend;
 
-use DeepWebSolutions\Framework\Settings\Exceptions\DuplicateSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\Exceptions\InvalidSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\SettingsBackendInterface;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsPage;
+use DeepWebSolutions\Framework\Settings\Backend\SettingsBackendInterface;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 
 /**
  * WooCommerce-backed settings backend for a single page.

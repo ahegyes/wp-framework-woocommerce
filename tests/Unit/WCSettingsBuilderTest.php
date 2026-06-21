@@ -2,11 +2,11 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Unit;
 
-use DeepWebSolutions\Framework\Settings\OptionsResolver;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsPage;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsSection;
-use DeepWebSolutions\Framework\WooCommerce\SettingsPage\WCSettingsBuilder;
+use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
+use DeepWebSolutions\Framework\WooCommerce\Backend\WCSettingsBuilder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;

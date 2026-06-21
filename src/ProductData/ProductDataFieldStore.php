@@ -2,11 +2,11 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\ProductData;
 
-use DeepWebSolutions\Framework\Settings\Exceptions\DuplicateSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\Exceptions\InvalidSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\FieldProcessor;
-use DeepWebSolutions\Framework\Settings\FieldType;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
+use DeepWebSolutions\Framework\Settings\Schema\FieldType;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 
 /**
  * Registers a WooCommerce product-data settings tab and persists its fields as product meta.

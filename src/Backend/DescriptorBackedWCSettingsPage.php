@@ -1,9 +1,9 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce\SettingsPage;
+namespace DeepWebSolutions\Framework\WooCommerce\Backend;
 
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsPage;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsSection;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\Exceptions\UnboundSettingsPageException;
 
 /**

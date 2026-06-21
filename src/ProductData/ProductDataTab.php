@@ -2,7 +2,7 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\ProductData;
 
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsSection;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\Exceptions\InvalidProductDataTabException;
 
 /**

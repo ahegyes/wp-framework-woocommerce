@@ -1,11 +1,11 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce\SettingsPage;
+namespace DeepWebSolutions\Framework\WooCommerce\Backend;
 
-use DeepWebSolutions\Framework\Settings\FieldType;
-use DeepWebSolutions\Framework\Settings\OptionsResolver;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsPage;
+use DeepWebSolutions\Framework\Settings\Schema\FieldType;
+use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 
 /**
  * Translates a settings page descriptor into WooCommerce's settings-array format.

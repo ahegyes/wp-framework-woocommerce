@@ -2,10 +2,10 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\ProductData;
 
-use DeepWebSolutions\Framework\Settings\Exceptions\UnknownFieldTypeException;
-use DeepWebSolutions\Framework\Settings\FieldType;
-use DeepWebSolutions\Framework\Settings\OptionsResolver;
-use DeepWebSolutions\Framework\Settings\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\UnknownFieldTypeException;
+use DeepWebSolutions\Framework\Settings\Schema\FieldType;
+use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 
 /**
  * Renders a product-data field as a native WooCommerce control.
