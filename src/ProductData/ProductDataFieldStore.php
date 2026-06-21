@@ -8,6 +8,9 @@ use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 
+use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
+use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
+
 /**
  * Registers a WooCommerce product-data settings tab and persists its fields as product meta.
  *
@@ -149,7 +152,7 @@ final class ProductDataFieldStore {
 
 		// A checkbox persists as WooCommerce's yes/no string on every write path, so its render and reads agree.
 		if ( FieldType::Checkbox === FieldType::tryFrom( $this->by_meta_key[ $meta_key ]->type ) ) {
-			$value = $this->checkbox_value( $value );
+			$value = to_yes_no( $value );
 		}
 
 		$product->update_meta_data( $meta_key, $value );
@@ -283,7 +286,7 @@ final class ProductDataFieldStore {
 		echo '<div id="' . \esc_attr( $tab->slug . '_product_data' ) . '" class="panel woocommerce_options_panel">';
 
 		foreach ( $tab->sections as $section ) {
-			$fields = \array_values( \array_filter( $section->fields, fn ( SettingsField $field ): bool => $this->can_edit( $field ) ) );
+			$fields = \array_values( \array_filter( $section->fields, static fn ( SettingsField $field ): bool => is_field_editable_by_current_user( $field ) ) );
 			if ( array() === $fields ) {
 				continue;
 			}
@@ -328,7 +331,7 @@ final class ProductDataFieldStore {
 
 		foreach ( $this->tab()->sections as $section ) {
 			foreach ( $section->fields as $field ) {
-				if ( ! $this->can_edit( $field ) ) {
+				if ( ! is_field_editable_by_current_user( $field ) ) {
 					continue;
 				}
 				$meta_key = $this->meta_key_for( $section->id, $field );
@@ -545,22 +548,8 @@ final class ProductDataFieldStore {
 	 */
 	private function default_value( SettingsField $field ): mixed {
 		return FieldType::Checkbox === FieldType::tryFrom( $field->type )
-			? $this->checkbox_value( $field->default )
+			? to_yes_no( $field->default )
 			: $field->default;
-	}
-
-	/**
-	 * Normalizes a value to WooCommerce's yes/no checkbox string, on which a checkbox's checked state turns.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   mixed $value Value to normalize.
-	 *
-	 * @return  string
-	 */
-	private function checkbox_value( mixed $value ): string {
-		return ( true === $value || 'yes' === $value || 1 === $value || '1' === $value ) ? 'yes' : 'no';
 	}
 
 	/**
@@ -599,20 +588,6 @@ final class ProductDataFieldStore {
 		$classes = $this->tab()->classes;
 
 		return \is_array( $classes ) ? \array_values( $classes ) : \array_values( (array) $classes( $product_id ) );
-	}
-
-	/**
-	 * Whether the current user may edit a field.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   SettingsField $field Field to check.
-	 *
-	 * @return  bool
-	 */
-	private function can_edit( SettingsField $field ): bool {
-		return null === $field->capability || \current_user_can( $field->capability );
 	}
 
 	/**

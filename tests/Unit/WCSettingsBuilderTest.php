@@ -138,6 +138,38 @@ final class WCSettingsBuilderTest extends TestCase {
 		self::assertSame( 'yes', $row['default'] );
 	}
 
+	public function test_a_string_yes_checkbox_default_maps_to_the_wc_yes_string(): void {
+		$page = $this->page_with_field(
+			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default: 'yes' ),
+		);
+
+		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
+
+		self::assertSame( 'yes', $row['default'] );
+	}
+
+	public function test_a_string_no_checkbox_default_maps_to_the_wc_no_string(): void {
+		// Canonical rule: 'no' is unchecked. The superseded (bool) cast mapped the truthy 'no' to 'yes'.
+		$page = $this->page_with_field(
+			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default: 'no' ),
+		);
+
+		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
+
+		self::assertSame( 'no', $row['default'] );
+	}
+
+	public function test_an_arbitrary_string_checkbox_default_maps_to_the_wc_no_string(): void {
+		// Canonical rule: any non-canonical string is unchecked. The superseded (bool) cast mapped it to 'yes'.
+		$page = $this->page_with_field(
+			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default: 'anything' ),
+		);
+
+		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
+
+		self::assertSame( 'no', $row['default'] );
+	}
+
 	public function test_non_string_option_labels_are_stringified(): void {
 		$page = $this->page_with_field(
 			new SettingsField( id: 'amount', type: 'select', label: 'Amount', options: array( 1 => 100, 2 => 'Two' ) ),

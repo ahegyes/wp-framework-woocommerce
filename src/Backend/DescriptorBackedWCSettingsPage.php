@@ -6,6 +6,8 @@ use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\Exceptions\UnboundSettingsPageException;
 
+use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
+
 /**
  * Base for a per-page WooCommerce settings tab backed by a framework settings descriptor.
  *
@@ -133,7 +135,7 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 		foreach ( $descriptor->sections as $section ) {
 			$fields = array();
 			foreach ( $section->fields as $field ) {
-				if ( null === $field->capability || \current_user_can( $field->capability ) ) {
+				if ( is_field_editable_by_current_user( $field ) ) {
 					$fields[] = $field;
 				}
 			}

@@ -8,6 +8,8 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldEx
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 
+use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
+
 /**
  * WooCommerce-backed settings backend for a single page.
  *
@@ -181,16 +183,15 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 				continue;
 			}
 
-			$key        = $page->slug . '_' . $field_id;
-			$sanitize   = $field->sanitize;
-			$capability = $field->capability;
+			$key      = $page->slug . '_' . $field_id;
+			$sanitize = $field->sanitize;
 			\add_filter(
 				'woocommerce_admin_settings_sanitize_option_' . $key,
-				static function ( mixed $value ) use ( $key, $sanitize, $capability ): mixed {
+				static function ( mixed $value ) use ( $key, $sanitize, $field ): mixed {
 					// A user without the field's capability cannot change it: keep the stored value, or skip
 					// the write (null, which WooCommerce honors) when none is stored, so a protected field
 					// the user cannot edit is never created.
-					if ( null !== $capability && ! \current_user_can( $capability ) ) {
+					if ( ! is_field_editable_by_current_user( $field ) ) {
 						$sentinel = new \stdClass();
 						$stored   = \get_option( $key, $sentinel );
 

@@ -7,6 +7,9 @@ use DeepWebSolutions\Framework\Settings\Schema\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 
+use function DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes;
+use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
+
 /**
  * Renders a product-data field as a native WooCommerce control.
  *
@@ -62,11 +65,11 @@ final class ProductDataFieldRenderer {
 			$args['desc_tip']    = true;
 		}
 
-		$custom_attributes = $this->filter_attributes( $field->attributes );
+		$custom_attributes = filter_field_attributes( $field->attributes );
 
 		switch ( $type ) {
 			case FieldType::Checkbox:
-				$args['value'] = $this->checkbox_value( $value );
+				$args['value'] = to_yes_no( $value );
 				break;
 			case FieldType::Multiselect:
 				$args['name'] = $meta_key . '[]';
@@ -140,46 +143,6 @@ final class ProductDataFieldRenderer {
 	// endregion
 
 	// region HELPERS
-
-	/**
-	 * Normalizes a value to WooCommerce's yes/no checkbox string; a checkbox control's checked state turns on it.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   mixed $value Current value, a boolean default or a stored yes/no string.
-	 *
-	 * @return  string
-	 */
-	private function checkbox_value( mixed $value ): string {
-		return ( true === $value || 'yes' === $value || 1 === $value || '1' === $value ) ? 'yes' : 'no';
-	}
-
-	/**
-	 * Keeps only safe HTML attributes, dropping malformed names and executable on* event handlers.
-	 *
-	 * WooCommerce escapes attribute names and values but does not reject event handlers, so a descriptor is
-	 * filtered here to the same allow-list the field renderer and WC settings builder enforce.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   array<string, scalar> $attributes Descriptor attribute map.
-	 *
-	 * @return  array<string, scalar>
-	 */
-	private function filter_attributes( array $attributes ): array {
-		$filtered = array();
-		foreach ( $attributes as $attribute => $value ) {
-			if ( 1 !== \preg_match( '/\A[a-z][a-z0-9-]*\z/i', $attribute ) || 0 === \stripos( $attribute, 'on' ) ) {
-				continue;
-			}
-
-			$filtered[ $attribute ] = $value;
-		}
-
-		return $filtered;
-	}
 
 	/**
 	 * Stringifies a resolved options map's labels; a non-scalar label becomes an empty string, as WooCommerce

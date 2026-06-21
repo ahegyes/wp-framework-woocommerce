@@ -7,6 +7,9 @@ use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 
+use function DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes;
+use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
+
 /**
  * Translates a settings page descriptor into WooCommerce's settings-array format.
  *
@@ -106,7 +109,7 @@ final class WCSettingsBuilder {
 			$entry['options'] = $this->stringify_labels( $this->options_resolver->resolve( $field->options ) );
 		}
 
-		$attributes = $this->filter_attributes( $field->attributes );
+		$attributes = filter_field_attributes( $field->attributes );
 		if ( array() !== $attributes ) {
 			$entry['custom_attributes'] = $attributes;
 		}
@@ -126,30 +129,10 @@ final class WCSettingsBuilder {
 	 */
 	private function map_default( SettingsField $field ): mixed {
 		return match ( $field->type ) {
-			FieldType::Checkbox->value    => $this->checkbox_default( $field->default ),
+			FieldType::Checkbox->value    => to_yes_no( $field->default ),
 			// WooCommerce matches multiselect selections with a strict (string) in_array, so the set must be strings.
 			FieldType::Multiselect->value => $this->stringify_selected( $field->default ),
 			default                       => $field->default,
-		};
-	}
-
-	/**
-	 * Maps a checkbox default to WooCommerce's yes/no string.
-	 *
-	 * WooCommerce compares a checkbox against the literal 'yes'; the framework's checkbox value is
-	 * boolean, so any truthy default becomes 'yes'.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   mixed $default Field default to coerce.
-	 *
-	 * @return  string
-	 */
-	private function checkbox_default( mixed $default ): string {
-		return match ( (bool) $default ) {
-			true  => 'yes',
-			false => 'no',
 		};
 	}
 
@@ -212,32 +195,6 @@ final class WCSettingsBuilder {
 			static fn ( mixed $value ): string => \is_scalar( $value ) ? (string) $value : '',
 			$default,
 		);
-	}
-
-	/**
-	 * Keeps only safe HTML attributes, dropping malformed names and executable on* event handlers.
-	 *
-	 * WooCommerce escapes attribute names and values but does not reject event handlers, so a descriptor
-	 * is filtered here to the same allow-list the WordPress field renderer enforces.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   array<string, scalar> $attributes Descriptor attribute map.
-	 *
-	 * @return  array<string, scalar>
-	 */
-	private function filter_attributes( array $attributes ): array {
-		$filtered = array();
-		foreach ( $attributes as $attribute => $value ) {
-			if ( 1 !== \preg_match( '/\A[a-z][a-z0-9-]*\z/i', $attribute ) || 0 === \stripos( $attribute, 'on' ) ) {
-				continue;
-			}
-
-			$filtered[ $attribute ] = $value;
-		}
-
-		return $filtered;
 	}
 
 	// endregion

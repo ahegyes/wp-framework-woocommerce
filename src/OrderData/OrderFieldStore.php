@@ -11,6 +11,8 @@ use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\FieldRenderer;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 
+use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
+
 /**
  * WooCommerce-order object-field store: an order meta box plus per-object meta CRUD.
  *
@@ -249,7 +251,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 		}
 
 		foreach ( $this->fields_of( $box, $object_id ) as $field ) {
-			if ( ! $this->can_edit( $field ) ) {
+			if ( ! is_field_editable_by_current_user( $field ) ) {
 				continue;
 			}
 			// Object fields are revoke-based: an absent meta renders as unset, NOT the field default, so a
@@ -305,7 +307,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 		// queued a write — so a K-field box is one order write (or none for a no-op submit) rather than K.
 		$changed = false;
 		foreach ( $this->fields_of( $box, $object_id ) as $field ) {
-			if ( ! $this->can_edit( $field ) ) {
+			if ( ! is_field_editable_by_current_user( $field ) ) {
 				continue;
 			}
 
@@ -379,20 +381,6 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 		}
 
 		return 0;
-	}
-
-	/**
-	 * Whether the current user may edit the given field.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   SettingsField $field Field to check.
-	 *
-	 * @return  bool
-	 */
-	private function can_edit( SettingsField $field ): bool {
-		return null === $field->capability || \current_user_can( $field->capability );
 	}
 
 	/**

@@ -5,6 +5,8 @@ namespace DeepWebSolutions\Framework\WooCommerce\ProductData;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\Exceptions\InvalidProductDataTabException;
 
+use function DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier;
+
 /**
  * Declarative description of a WooCommerce product-data settings tab — a custom panel in the product
  * editor's Product data meta box.
@@ -18,16 +20,6 @@ use DeepWebSolutions\Framework\WooCommerce\Exceptions\InvalidProductDataTabExcep
  */
 final readonly class ProductDataTab {
 	// region FIELDS AND CONSTANTS
-
-	/**
-	 * Slug charset: a lowercase letter then lowercase letters, digits, underscores, or hyphens.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @var     string
-	 */
-	private const SLUG_PATTERN = '/\A[a-z][a-z0-9_-]*\z/';
 
 	/**
 	 * Product-type gate deciding whether the tab applies to a product; null applies it to every product
@@ -82,7 +74,7 @@ final readonly class ProductDataTab {
 		?callable $supports_product = null,
 		array $custom_renderers = array(),
 	) {
-		if ( 1 !== \preg_match( self::SLUG_PATTERN, $slug ) ) {
+		if ( ! is_valid_identifier( $slug ) ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
 			throw new InvalidProductDataTabException( "Invalid product-data tab slug: '$slug'" );
 		}
