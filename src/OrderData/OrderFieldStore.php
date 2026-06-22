@@ -43,7 +43,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @var     string
 	 */
-	private const ORDER_SCREEN = 'shop_order';
+	protected const ORDER_SCREEN = 'shop_order';
 
 	/**
 	 * HPOS order edit screen, where the box must register when custom order tables are authoritative.
@@ -53,7 +53,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @var     string
 	 */
-	private const HPOS_ORDER_SCREEN = 'woocommerce_page_wc-orders';
+	protected const HPOS_ORDER_SCREEN = 'woocommerce_page_wc-orders';
 
 	/**
 	 * HPOS order edit screen for a user who cannot view the WooCommerce menu (the page falls under admin.php).
@@ -63,7 +63,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @var     string
 	 */
-	private const HPOS_ORDER_SCREEN_RESTRICTED = 'admin_page_wc-orders';
+	protected const HPOS_ORDER_SCREEN_RESTRICTED = 'admin_page_wc-orders';
 
 	// endregion
 
@@ -79,8 +79,8 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @param   FieldProcessor $processor Processor for sanitizing submitted values.
 	 */
 	public function __construct(
-		private FieldRenderer $renderer = new FieldRenderer(),
-		private FieldProcessor $processor = new FieldProcessor(),
+		protected FieldRenderer $renderer = new FieldRenderer(),
+		protected FieldProcessor $processor = new FieldProcessor(),
 	) {}
 
 	// endregion
@@ -191,7 +191,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @return  list<string>
 	 */
-	private function resolve_screens( string $screen ): array {
+	protected function resolve_screens( string $screen ): array {
 		if ( self::ORDER_SCREEN !== $screen ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
 			throw new InvalidObjectMetaBoxException( "OrderFieldStore registers meta boxes on the WooCommerce order screen ('shop_order') only; got '$screen'." );
@@ -212,7 +212,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @param   ObjectMetaBox $box    Box to add.
 	 * @param   string        $screen Resolved screen the box renders on.
 	 */
-	private function add_box( ObjectMetaBox $box, string $screen ): void {
+	protected function add_box( ObjectMetaBox $box, string $screen ): void {
 		$priority = match ( $box->priority ) {
 			'core', 'high', 'low' => $box->priority,
 			default               => 'default',
@@ -237,7 +237,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @param   ObjectMetaBox $box    Box being rendered.
 	 * @param   mixed         $object Screen object WordPress passes the callback (a WooCommerce order or WP_Post).
 	 */
-	private function render_box( ObjectMetaBox $box, mixed $object ): void {
+	protected function render_box( ObjectMetaBox $box, mixed $object ): void {
 		$object_id = $this->object_id_of( $object );
 
 		// Emitted for every box, bespoke renderer included: save_box() verifies this nonce before it runs
@@ -276,7 +276,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @param   ObjectMetaBox $box       Box being saved.
 	 * @param   int           $object_id Order whose meta to write.
 	 */
-	private function save_box( ObjectMetaBox $box, int $object_id ): void {
+	protected function save_box( ObjectMetaBox $box, int $object_id ): void {
 		$name = $this->nonce_name( $box );
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce read here and verified on the next line.
 		$nonce = isset( $_POST[ $name ] ) ? \sanitize_text_field( \wp_unslash( $_POST[ $name ] ) ) : '';
@@ -346,7 +346,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @return  list<SettingsField>
 	 */
-	private function fields_of( ObjectMetaBox $box, int $object_id ): array {
+	protected function fields_of( ObjectMetaBox $box, int $object_id ): array {
 		/** @var list<SettingsField> $fields */
 		$fields = ( $box->fields_provider )( $object_id );
 
@@ -372,7 +372,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @return  int
 	 */
-	private function object_id_of( mixed $object ): int {
+	protected function object_id_of( mixed $object ): int {
 		if ( $object instanceof \WC_Abstract_Order ) {
 			return $object->get_id();
 		}
@@ -395,7 +395,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @return  bool
 	 */
-	private function should_store( mixed $value ): bool {
+	protected function should_store( mixed $value ): bool {
 		return false !== $value && '' !== $value && array() !== $value;
 	}
 
@@ -411,7 +411,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @return  string
 	 */
-	private function nonce_action( ObjectMetaBox $box, int $object_id ): string {
+	protected function nonce_action( ObjectMetaBox $box, int $object_id ): string {
 		return 'dws_object_field_' . $box->id . '_' . $object_id;
 	}
 
@@ -425,7 +425,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @return  string
 	 */
-	private function nonce_name( ObjectMetaBox $box ): string {
+	protected function nonce_name( ObjectMetaBox $box ): string {
 		return 'dws_object_field_' . $box->id . '_nonce';
 	}
 

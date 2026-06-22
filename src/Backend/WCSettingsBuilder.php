@@ -33,7 +33,7 @@ final class WCSettingsBuilder {
 	 * @param   OptionsResolver $options_resolver Resolves a field's option source to a value-to-label map.
 	 */
 	public function __construct(
-		private OptionsResolver $options_resolver = new OptionsResolver(),
+		protected OptionsResolver $options_resolver = new OptionsResolver(),
 	) {}
 
 	// endregion
@@ -93,7 +93,7 @@ final class WCSettingsBuilder {
 	 *
 	 * @return  array<string, mixed>
 	 */
-	private function build_field( string $slug, SettingsField $field ): array {
+	protected function build_field( string $slug, SettingsField $field ): array {
 		$entry = array(
 			'id'    => $slug . '_' . $field->id,
 			'type'  => $field->type,
@@ -127,7 +127,7 @@ final class WCSettingsBuilder {
 	 *
 	 * @return  mixed
 	 */
-	private function map_default( SettingsField $field ): mixed {
+	protected function map_default( SettingsField $field ): mixed {
 		return match ( $field->type ) {
 			FieldType::Checkbox->value    => to_yes_no( $field->default ),
 			// WooCommerce matches multiselect selections with a strict (string) in_array, so the set must be strings.
@@ -146,7 +146,7 @@ final class WCSettingsBuilder {
 	 *
 	 * @return  bool
 	 */
-	private function expects_options( string $type ): bool {
+	protected function expects_options( string $type ): bool {
 		return \in_array(
 			$type,
 			array( FieldType::Select->value, FieldType::Multiselect->value, FieldType::Radio->value ),
@@ -167,7 +167,7 @@ final class WCSettingsBuilder {
 	 *
 	 * @return  array<array-key, string>
 	 */
-	private function stringify_labels( array $options ): array {
+	protected function stringify_labels( array $options ): array {
 		$labels = array();
 		foreach ( $options as $value => $label ) {
 			$labels[ $value ] = \is_scalar( $label ) ? (string) $label : '';
@@ -186,7 +186,7 @@ final class WCSettingsBuilder {
 	 *
 	 * @return  array<array-key, string>
 	 */
-	private function stringify_selected( mixed $default ): array {
+	protected function stringify_selected( mixed $default ): array {
 		if ( ! \is_array( $default ) ) {
 			return array();
 		}

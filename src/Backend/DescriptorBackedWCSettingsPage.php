@@ -30,7 +30,7 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	 *
 	 * @var     array<class-string<self>, SettingsPage>
 	 */
-	private static array $descriptors = array();
+	protected static array $descriptors = array();
 
 	// endregion
 
@@ -111,7 +111,7 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	 *
 	 * @return  SettingsPage
 	 */
-	private function descriptor(): SettingsPage {
+	protected function descriptor(): SettingsPage {
 		return self::$descriptors[ static::class ]
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
 			?? throw new UnboundSettingsPageException( 'No settings descriptor is bound to ' . static::class . '.' );
@@ -128,7 +128,7 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	 *
 	 * @return  SettingsPage
 	 */
-	private function editable_page(): SettingsPage {
+	protected function editable_page(): SettingsPage {
 		$descriptor = $this->descriptor();
 
 		$sections = array();

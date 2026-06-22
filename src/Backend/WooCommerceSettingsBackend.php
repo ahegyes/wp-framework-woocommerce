@@ -36,7 +36,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 *
 	 * @var     ?SettingsPage
 	 */
-	private ?SettingsPage $page = null;
+	protected ?SettingsPage $page = null;
 
 	/**
 	 * Registered fields keyed by id, for option-key routing and validation.
@@ -46,7 +46,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 *
 	 * @var     array<string, SettingsField>
 	 */
-	private array $fields = array();
+	protected array $fields = array();
 
 	// endregion
 
@@ -61,7 +61,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 * @param   class-string<DescriptorBackedWCSettingsPage> $page_class Consumer subclass that renders the page as a WooCommerce tab.
 	 */
 	public function __construct(
-		private string $page_class,
+		protected string $page_class,
 	) {}
 
 	// endregion
@@ -154,7 +154,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 *
 	 * @return  array<string, SettingsField>
 	 */
-	private function map_fields( SettingsPage $page ): array {
+	protected function map_fields( SettingsPage $page ): array {
 		$map = array();
 		foreach ( $page->sections as $section ) {
 			foreach ( $section->fields as $field ) {
@@ -177,7 +177,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 *
 	 * @param   SettingsPage $page Page whose fields' filters to wire.
 	 */
-	private function register_field_filters( SettingsPage $page ): void {
+	protected function register_field_filters( SettingsPage $page ): void {
 		foreach ( $this->fields as $field_id => $field ) {
 			if ( null === $field->sanitize && null === $field->capability ) {
 				continue;
@@ -216,7 +216,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 *
 	 * @return  string
 	 */
-	private function option_key( string $field_id ): string {
+	protected function option_key( string $field_id ): string {
 		if ( null === $this->page || ! \array_key_exists( $field_id, $this->fields ) ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
 			throw new InvalidSettingsFieldException( "Settings field '$field_id' is not registered on this page." );

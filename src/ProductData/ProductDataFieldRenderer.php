@@ -33,7 +33,7 @@ final class ProductDataFieldRenderer {
 	 * @param   OptionsResolver $options_resolver Resolver for choice fields' option sets.
 	 */
 	public function __construct(
-		private OptionsResolver $options_resolver = new OptionsResolver(),
+		protected OptionsResolver $options_resolver = new OptionsResolver(),
 	) {}
 
 	// endregion
@@ -155,7 +155,7 @@ final class ProductDataFieldRenderer {
 	 *
 	 * @return  array<array-key, string>
 	 */
-	private function stringify_labels( array $options ): array {
+	protected function stringify_labels( array $options ): array {
 		$labels = array();
 		foreach ( $options as $value => $label ) {
 			$labels[ $value ] = \is_scalar( $label ) ? (string) $label : '';
@@ -174,7 +174,7 @@ final class ProductDataFieldRenderer {
 	 *
 	 * @return  string
 	 */
-	private function stringify( mixed $value ): string {
+	protected function stringify( mixed $value ): string {
 		return \is_scalar( $value ) ? (string) $value : '';
 	}
 

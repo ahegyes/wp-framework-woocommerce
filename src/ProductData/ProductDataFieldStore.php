@@ -34,7 +34,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @var     ?ProductDataTab
 	 */
-	private ?ProductDataTab $tab = null;
+	protected ?ProductDataTab $tab = null;
 
 	/**
 	 * Registered fields keyed by their resolved meta key, for default injection and the save sweep.
@@ -44,7 +44,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @var     array<string, SettingsField>
 	 */
-	private array $by_meta_key = array();
+	protected array $by_meta_key = array();
 
 	/**
 	 * Resolved meta key keyed by "section_id\0field_id", for CRUD addressing.
@@ -54,7 +54,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @var     array<string, string>
 	 */
-	private array $by_address = array();
+	protected array $by_address = array();
 
 	// endregion
 
@@ -70,8 +70,8 @@ final class ProductDataFieldStore {
 	 * @param   FieldProcessor           $processor Processor for sanitizing submitted taxonomy-typed values.
 	 */
 	public function __construct(
-		private ProductDataFieldRenderer $renderer = new ProductDataFieldRenderer(),
-		private FieldProcessor $processor = new FieldProcessor(),
+		protected ProductDataFieldRenderer $renderer = new ProductDataFieldRenderer(),
+		protected FieldProcessor $processor = new FieldProcessor(),
 	) {}
 
 	// endregion
@@ -251,7 +251,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  array<string, mixed>
 	 */
-	private function register_tab_filter( array $tabs ): array {
+	protected function register_tab_filter( array $tabs ): array {
 		global $thepostid;
 		$product_id = (int) $thepostid;
 		if ( ! $this->is_supported( $product_id ) ) {
@@ -275,7 +275,7 @@ final class ProductDataFieldStore {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
-	private function render_panel(): void {
+	protected function render_panel(): void {
 		global $thepostid;
 		$product_id = (int) $thepostid;
 		if ( ! $this->is_supported( $product_id ) ) {
@@ -320,7 +320,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @param   int $product_id Product being saved.
 	 */
-	private function save( int $product_id ): void {
+	protected function save( int $product_id ): void {
 		if ( ! $this->is_supported( $product_id ) ) {
 			return;
 		}
@@ -354,7 +354,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  mixed
 	 */
-	private function inject_default( mixed $value, int $object_id, string $meta_key ): mixed {
+	protected function inject_default( mixed $value, int $object_id, string $meta_key ): mixed {
 		$field = $this->by_meta_key[ $meta_key ] ?? null;
 		if ( null === $field ) {
 			return $value;
@@ -377,7 +377,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  array<int, object>
 	 */
-	private function inject_default_bulk( array $meta_data, object $object ): array {
+	protected function inject_default_bulk( array $meta_data, object $object ): array {
 		if ( ! $object instanceof \WC_Product || ! $this->is_supported( $object->get_id() ) ) {
 			return $meta_data;
 		}
@@ -410,7 +410,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @throws  DuplicateSettingsFieldException If two fields resolve to the same meta key.
 	 */
-	private function index_fields( ProductDataTab $tab ): void {
+	protected function index_fields( ProductDataTab $tab ): void {
 		$this->by_meta_key = array();
 		$this->by_address  = array();
 
@@ -438,7 +438,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  string
 	 */
-	private function meta_key_for( string $section_id, SettingsField $field ): string {
+	protected function meta_key_for( string $section_id, SettingsField $field ): string {
 		return $field->meta_key ?? ( $this->tab()->meta_key_prefix . $section_id . '_' . $field->id );
 	}
 
@@ -455,7 +455,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  string
 	 */
-	private function require_meta_key( string $section_id, string $field_id ): string {
+	protected function require_meta_key( string $section_id, string $field_id ): string {
 		$address = $this->address( $section_id, $field_id );
 		if ( ! isset( $this->by_address[ $address ] ) ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
@@ -476,7 +476,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  string
 	 */
-	private function address( string $section_id, string $field_id ): string {
+	protected function address( string $section_id, string $field_id ): string {
 		return $section_id . "\0" . $field_id;
 	}
 
@@ -492,7 +492,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  mixed
 	 */
-	private function submitted_value( SettingsField $field, string $meta_key ): mixed {
+	protected function submitted_value( SettingsField $field, string $meta_key ): mixed {
 		$type = FieldType::tryFrom( $field->type );
 
 		if ( FieldType::Checkbox === $type ) {
@@ -525,7 +525,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  mixed
 	 */
-	private function sanitize_and_validate( SettingsField $field, mixed $value, mixed $rejected ): mixed {
+	protected function sanitize_and_validate( SettingsField $field, mixed $value, mixed $rejected ): mixed {
 		if ( null !== $field->sanitize ) {
 			$value = ( $field->sanitize )( $value );
 		}
@@ -546,7 +546,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  mixed
 	 */
-	private function default_value( SettingsField $field ): mixed {
+	protected function default_value( SettingsField $field ): mixed {
 		return FieldType::Checkbox === FieldType::tryFrom( $field->type )
 			? to_yes_no( $field->default )
 			: $field->default;
@@ -562,7 +562,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  bool
 	 */
-	private function is_supported( int $product_id ): bool {
+	protected function is_supported( int $product_id ): bool {
 		// Product existence is the non-overridable floor: the global default filters must never inject into a
 		// non-product post. A consumer's gate only narrows the set of products further.
 		if ( false === \WC_Product_Factory::get_product_type( $product_id ) ) {
@@ -584,7 +584,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  list<string>
 	 */
-	private function tab_classes( int $product_id ): array {
+	protected function tab_classes( int $product_id ): array {
 		$classes = $this->tab()->classes;
 
 		return \is_array( $classes ) ? \array_values( $classes ) : \array_values( (array) $classes( $product_id ) );
@@ -598,7 +598,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  ProductDataTab
 	 */
-	private function tab(): ProductDataTab {
+	protected function tab(): ProductDataTab {
 		\assert( $this->tab instanceof ProductDataTab );
 
 		return $this->tab;
