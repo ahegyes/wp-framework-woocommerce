@@ -10,6 +10,7 @@ use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\FieldRenderer;
 use DeepWebSolutions\Framework\Settings\Schema\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\CustomFieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderFieldStore;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -23,6 +24,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( FieldProcessor::class )]
 #[UsesClass( OptionsResolver::class )]
 #[UsesClass( FieldType::class )]
+#[UsesClass( CustomFieldType::class )]
 final class OrderFieldStoreTest extends TestCase {
 	private const BOX_ID       = 'dws_unlock';
 	private const NONCE_NAME   = 'dws_object_field_dws_unlock_nonce';
@@ -489,6 +491,54 @@ final class OrderFieldStoreTest extends TestCase {
 		$title = (string) ( ( (array) ( $this->boxes_on( $screen )[ self::BOX_ID ] ?? array() ) )['title'] ?? '' );
 		self::assertStringNotContainsString( '<script>', $title );
 		self::assertStringContainsString( '&lt;script&gt;', $title );
+	}
+
+	public function test_a_custom_field_type_renders_and_saves_through_the_order_surface(): void {
+		$screen = OrderUtil::custom_orders_table_usage_is_enabled() ? 'woocommerce_page_wc-orders' : 'shop_order';
+		\set_current_screen( $screen );
+
+		$custom_types = array(
+			'single_select_page' => new CustomFieldType(
+				type: 'single_select_page',
+				render: static fn ( SettingsField $field, mixed $value, string $name ): string => \sprintf(
+					'<select class="dws-page-select" name="%s"><option value="42"%s>Sample</option></select>',
+					\esc_attr( $name ),
+					\selected( '42', (string) $value, false ),
+				),
+			),
+		);
+		$box   = new ObjectMetaBox(
+			id: self::BOX_ID,
+			title: 'Home',
+			screen: 'shop_order',
+			context: 'side',
+			priority: 'default',
+			fields_provider: static fn ( int $object_id ): array => array(
+				new SettingsField( id: 'home_page', type: 'single_select_page', label: 'Home Page' ),
+			),
+		);
+		$store = new OrderFieldStore(
+			renderer: new FieldRenderer( custom_types: $custom_types ),
+			processor: new FieldProcessor( custom_types: $custom_types ),
+		);
+		$store->register_meta_box( $box );
+
+		// The injected renderer's custom control reaches the rendered box.
+		\do_action( "add_meta_boxes_$screen" );
+		$definition = (array) ( $this->boxes_on( $screen )[ self::BOX_ID ] ?? array() );
+		$callback   = $definition['callback'] ?? null;
+		\assert( \is_callable( $callback ) );
+		\ob_start();
+		$callback( \wc_get_order( $this->order_id ) );
+		$html = (string) \ob_get_clean();
+		self::assertStringContainsString( 'class="dws-page-select"', $html );
+		self::assertStringContainsString( 'name="dws_unlock[home_page]"', $html );
+
+		// The injected processor accepts the custom type's submission, which the store persists as order meta.
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::BOX_ID => array( 'home_page' => '42' ) );
+		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
+
+		self::assertSame( '42', $store->get( $this->order_id, 'home_page' ) );
 	}
 
 	private function nonce(): string {
