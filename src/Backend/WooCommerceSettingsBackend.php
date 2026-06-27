@@ -4,10 +4,12 @@ namespace DeepWebSolutions\Framework\WooCommerce\Backend;
 
 use DeepWebSolutions\Framework\Settings\Backend\SettingsBackendInterface;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsSectionException;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 
+use function DeepWebSolutions\Framework\Settings\Schema\assert_unique_section_and_field_ids;
 use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
 
 /**
@@ -74,6 +76,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
+	 * @throws  DuplicateSettingsSectionException If two sections on the page share an id.
 	 * @throws  DuplicateSettingsFieldException If two fields on the page share an id.
 	 */
 	#[\Override]
@@ -148,25 +151,24 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	// region HELPERS
 
 	/**
-	 * Builds the field-id to field map, rejecting a page-duplicate field id that would collide on its option key.
+	 * Builds the field-id to field map, rejecting a page-duplicate section or field id that would collide on a section anchor or option key.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
 	 * @param   SettingsPage $page Page whose fields to map.
 	 *
+	 * @throws  DuplicateSettingsSectionException If two sections on the page share an id.
 	 * @throws  DuplicateSettingsFieldException If two fields on the page share an id.
 	 *
 	 * @return  array<string, SettingsField>
 	 */
 	protected function map_fields( SettingsPage $page ): array {
+		assert_unique_section_and_field_ids( $page );
+
 		$map = array();
 		foreach ( $page->sections as $section ) {
 			foreach ( $section->fields as $field ) {
-				if ( \array_key_exists( $field->id, $map ) ) {
-					// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
-					throw new DuplicateSettingsFieldException( "Duplicate settings field id on page: '$field->id'" );
-				}
 				$map[ $field->id ] = $field;
 			}
 		}

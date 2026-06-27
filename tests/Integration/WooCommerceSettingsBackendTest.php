@@ -3,6 +3,7 @@
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration;
 
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsSectionException;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
@@ -216,6 +217,26 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 				sections: array(
 					new SettingsSection( 'general', 'General', array( new SettingsField( id: 'dup', type: 'text', label: 'A' ) ) ),
 					new SettingsSection( 'advanced', 'Advanced', array( new SettingsField( id: 'dup', type: 'text', label: 'B' ) ) ),
+				),
+			),
+		);
+	}
+
+	public function test_a_duplicate_section_id_on_a_page_throws(): void {
+		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+
+		$this->expectException( DuplicateSettingsSectionException::class );
+
+		$backend->register_page(
+			new SettingsPage(
+				slug: 'dws-foo',
+				page_title: 'Foo',
+				menu_title: 'Foo',
+				capability: 'manage_woocommerce',
+				location: 'dws_foo',
+				sections: array(
+					new SettingsSection( 'general', 'General', array( new SettingsField( id: 'a', type: 'text', label: 'A' ) ) ),
+					new SettingsSection( 'general', 'General Again', array( new SettingsField( id: 'b', type: 'text', label: 'B' ) ) ),
 				),
 			),
 		);
