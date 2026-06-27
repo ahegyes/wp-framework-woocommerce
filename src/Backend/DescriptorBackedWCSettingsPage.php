@@ -72,6 +72,7 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	 *
 	 * @return  list<array<string, mixed>>
 	 */
+	#[\Override]
 	protected function get_settings_for_section_core( $section_id ): array {
 		if ( '' !== $section_id ) {
 			return array();

@@ -76,6 +76,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 *
 	 * @throws  DuplicateSettingsFieldException If two fields on the page share an id.
 	 */
+	#[\Override]
 	public function register_page( SettingsPage $page ): void {
 		$this->page   = $page;
 		$this->fields = $this->map_fields( $page );
@@ -102,6 +103,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
+	#[\Override]
 	public function get( string $field_id, mixed $default_value = null ): mixed {
 		return \get_option( $this->option_key( $field_id ), $default_value );
 	}
@@ -112,6 +114,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
+	#[\Override]
 	public function set( string $field_id, mixed $value ): void {
 		\update_option( $this->option_key( $field_id ), $value );
 	}
@@ -122,6 +125,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
+	#[\Override]
 	public function has( string $field_id ): bool {
 		$sentinel = new \stdClass();
 
@@ -134,6 +138,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
+	#[\Override]
 	public function delete( string $field_id ): bool {
 		return \delete_option( $this->option_key( $field_id ) );
 	}

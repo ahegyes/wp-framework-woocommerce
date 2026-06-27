@@ -95,6 +95,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 *
 	 * @throws  InvalidObjectMetaBoxException If the box targets a screen other than the WooCommerce order screen.
 	 */
+	#[\Override]
 	public function register_meta_box( ObjectMetaBox $box ): void {
 		foreach ( $this->resolve_screens( $box->screen ) as $screen ) {
 			\add_action( "add_meta_boxes_$screen", fn () => $this->add_box( $box, $screen ) );
@@ -109,6 +110,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
+	#[\Override]
 	public function get( int $object_id, string $meta_key, mixed $default_value = null ): mixed {
 		$order = \wc_get_order( $object_id );
 		if ( $order instanceof \WC_Abstract_Order ) {
@@ -124,6 +126,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
+	#[\Override]
 	public function set( int $object_id, string $meta_key, mixed $value ): void {
 		$order = \wc_get_order( $object_id );
 		if ( $order instanceof \WC_Abstract_Order ) {
@@ -144,6 +147,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
+	#[\Override]
 	public function has( int $object_id, string $meta_key ): bool {
 		$order = \wc_get_order( $object_id );
 		if ( $order instanceof \WC_Abstract_Order ) {
@@ -159,6 +163,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
+	#[\Override]
 	public function delete( int $object_id, string $meta_key ): bool {
 		$order = \wc_get_order( $object_id );
 		if ( $order instanceof \WC_Abstract_Order ) {
