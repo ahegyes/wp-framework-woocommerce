@@ -95,9 +95,10 @@ final class WCSettingsBuilder {
 	 */
 	protected function build_field( string $slug, SettingsField $field ): array {
 		$entry = array(
-			'id'    => $slug . '_' . $field->id,
-			'type'  => $field->type,
-			'title' => $field->label,
+			'id'       => $slug . '_' . $field->id,
+			'type'     => $field->type,
+			'title'    => $field->label,
+			'autoload' => $field->autoload,
 		);
 
 		if ( null !== $field->default_value ) {

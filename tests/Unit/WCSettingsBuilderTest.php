@@ -60,6 +60,24 @@ final class WCSettingsBuilderTest extends TestCase {
 		self::assertArrayNotHasKey( 'default', $row );
 	}
 
+	public function test_a_field_row_carries_an_explicit_off_autoload_flag_by_default(): void {
+		// WooCommerce defaults a settings option to autoloaded when the entry omits 'autoload', so the
+		// builder always emits it to keep framework settings out of alloptions unless a field opts in.
+		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
+
+		self::assertFalse( $row['autoload'] );
+	}
+
+	public function test_a_field_opting_into_autoload_emits_a_truthy_autoload_flag(): void {
+		$page = $this->page_with_field(
+			new SettingsField( id: 'cache', type: 'text', label: 'Cache', autoload: true ),
+		);
+
+		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_cache' );
+
+		self::assertTrue( $row['autoload'] );
+	}
+
 	public function test_resolved_options_are_included_for_a_choice_field(): void {
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_gateway' );
 
