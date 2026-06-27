@@ -5,8 +5,9 @@ namespace DeepWebSolutions\Framework\WooCommerce\Exceptions;
 use DeepWebSolutions\Framework\Shared\Exception\AbstractRuntimeException;
 
 /**
- * Thrown when a product-data tab descriptor is malformed — a tab slug outside the slug charset, which
- * reaches the product-data tab's element id and CSS class unescaped.
+ * Thrown when a product-data tab descriptor is malformed or incomplete — a tab slug outside the slug charset
+ * (which reaches the tab's element id and CSS class), or a custom field type the tab cannot render or sanitize
+ * because it declares no matching renderer or no sanitize callback.
  *
  * @since   2.0.0
  * @version 2.0.0

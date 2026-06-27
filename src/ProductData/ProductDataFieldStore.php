@@ -7,6 +7,7 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldEx
 use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\WooCommerce\Exceptions\InvalidProductDataTabException;
 
 use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
 use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
@@ -56,6 +57,16 @@ final class ProductDataFieldStore {
 	 */
 	protected array $by_address = array();
 
+	/**
+	 * The meta key a set() is persisting, which the pre-save strip keeps; null outside a set().
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @var     ?string
+	 */
+	protected ?string $preserve_key = null;
+
 	// endregion
 
 	// region MAGIC METHODS
@@ -87,6 +98,7 @@ final class ProductDataFieldStore {
 	 * @param   ProductDataTab $tab Tab to register.
 	 *
 	 * @throws  DuplicateSettingsFieldException If two fields resolve to the same meta key.
+	 * @throws  InvalidProductDataTabException If a custom field type has no renderer or no sanitize callback.
 	 */
 	public function register_tab( ProductDataTab $tab ): void {
 		$this->tab = $tab;
@@ -97,6 +109,7 @@ final class ProductDataFieldStore {
 		\add_action( 'woocommerce_process_product_meta', fn ( int $product_id ) => $this->save( $product_id ) );
 		\add_filter( 'default_post_metadata', fn ( mixed $value, int $object_id, string $meta_key ): mixed => $this->inject_default( $value, $object_id, $meta_key ), 99, 3 );
 		\add_filter( 'woocommerce_data_store_wp_post_read_meta', fn ( array $meta_data, object $wc_object ): array => $this->inject_default_bulk( $meta_data, $wc_object ), 99, 2 );
+		\add_action( 'woocommerce_before_product_object_save', fn ( \WC_Product $product ) => $this->strip_injected_defaults( $product ) );
 	}
 
 	/**
@@ -156,7 +169,15 @@ final class ProductDataFieldStore {
 		}
 
 		$product->update_meta_data( $meta_key, $value );
-		$product->save();
+
+		// The save fires the pre-save strip; flag this key so a value equal to its default is kept rather than
+		// mistaken for an untouched injection, matching the form save, which materializes every editable field.
+		$this->preserve_key = $meta_key;
+		try {
+			$product->save();
+		} finally {
+			$this->preserve_key = null;
+		}
 	}
 
 	/**
@@ -378,7 +399,9 @@ final class ProductDataFieldStore {
 	 * @return  array<int, object>
 	 */
 	protected function inject_default_bulk( array $meta_data, object $wc_object ): array {
-		if ( ! $wc_object instanceof \WC_Product || ! $this->is_supported( $wc_object->get_id() ) ) {
+		// The object itself proves the product exists, so the existence floor is skipped here — this runs on
+		// every product meta hydration, front-end loops included — and only the consumer gate is evaluated.
+		if ( ! $wc_object instanceof \WC_Product || ! $this->passes_gate( $wc_object->get_id() ) ) {
 			return $meta_data;
 		}
 
@@ -396,6 +419,36 @@ final class ProductDataFieldStore {
 		return $meta_data;
 	}
 
+	/**
+	 * Drops the read-time default rows injected for unstored fields before WooCommerce persists a product.
+	 * Hooked to woocommerce_before_product_object_save.
+	 *
+	 * The bulk-read injection splices a synthetic row for every unstored field so a predating product renders
+	 * its default; left in place, a save for any reason — a checkout stock decrement — would freeze that
+	 * default as a real row. A row is an untouched injection when it has no stored counterpart and still holds
+	 * the default, so it is removed; a deliberately set value (which differs, or already has a stored row) is
+	 * left to persist.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   \WC_Product $product Product about to be saved.
+	 */
+	protected function strip_injected_defaults( \WC_Product $product ): void {
+		$product_id = $product->get_id();
+		foreach ( $this->by_meta_key as $meta_key => $field ) {
+			if ( $meta_key === $this->preserve_key ) {
+				continue; // a value a set() is persisting to its own default, kept rather than read as an injection.
+			}
+			if ( \metadata_exists( 'post', $product_id, $meta_key ) ) {
+				continue;
+			}
+			if ( $product->get_meta( $meta_key, true ) === $this->default_value( $field ) ) {
+				$product->delete_meta_data( $meta_key );
+			}
+		}
+	}
+
 	// endregion
 
 	// region HELPERS
@@ -409,6 +462,7 @@ final class ProductDataFieldStore {
 	 * @param   ProductDataTab $tab Tab whose fields to index.
 	 *
 	 * @throws  DuplicateSettingsFieldException If two fields resolve to the same meta key.
+	 * @throws  InvalidProductDataTabException If a custom field type has no renderer or no sanitize callback.
 	 */
 	protected function index_fields( ProductDataTab $tab ): void {
 		$this->by_meta_key = array();
@@ -416,6 +470,7 @@ final class ProductDataFieldStore {
 
 		foreach ( $tab->sections as $section ) {
 			foreach ( $section->fields as $field ) {
+				$this->assert_custom_field_complete( $tab, $field );
 				$meta_key = $this->meta_key_for( $section->id, $field );
 				if ( \array_key_exists( $meta_key, $this->by_meta_key ) ) {
 					// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
@@ -424,6 +479,32 @@ final class ProductDataFieldStore {
 				$this->by_meta_key[ $meta_key ]                                 = $field;
 				$this->by_address[ $this->address( $section->id, $field->id ) ] = $meta_key;
 			}
+		}
+	}
+
+	/**
+	 * Rejects a custom field type the tab cannot handle: render and save both need a consumer seam, so a type
+	 * outside the framework taxonomy must declare a renderer on the tab and a sanitize callback on the field.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   ProductDataTab $tab   Tab the field belongs to.
+	 * @param   SettingsField  $field Field to validate.
+	 *
+	 * @throws  InvalidProductDataTabException If a custom field type has no renderer or no sanitize callback.
+	 */
+	protected function assert_custom_field_complete( ProductDataTab $tab, SettingsField $field ): void {
+		if ( null !== FieldType::tryFrom( $field->type ) ) {
+			return;
+		}
+		if ( ! isset( $tab->custom_renderers[ $field->type ] ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
+			throw new InvalidProductDataTabException( "Custom field type '$field->type' on tab '$tab->slug' has no renderer." );
+		}
+		if ( null === $field->sanitize ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
+			throw new InvalidProductDataTabException( "Custom field type '$field->type' on tab '$tab->slug' has no sanitize callback." );
 		}
 	}
 
@@ -506,8 +587,18 @@ final class ProductDataFieldStore {
 		$raw = isset( $_POST[ $meta_key ] ) ? \wp_unslash( $_POST[ $meta_key ] ) : null;
 
 		if ( null === $type ) {
-			// A custom type has no taxonomy processor; run its own sanitize/validate, falling back to the default.
-			return $this->sanitize_and_validate( $field, $raw, $field->default_value );
+			// A custom type's sanitize, required at registration, is the consumer's seam: it runs on the
+			// submission (an empty string when the field is absent). A value its validator rejects clears to the
+			// sanitized empty — never the descriptor default, never a raw null, never a skipped write — so a save
+			// cannot freeze the default for a predating product. This is the deliberate inverse of
+			// FieldProcessor::process_custom_or_reject(), which folds a built-in custom rejection to the default.
+			\assert( $field->sanitize instanceof \Closure );
+			$value = ( $field->sanitize )( $raw ?? '' );
+			if ( null !== $field->validate && ! ( $field->validate )( $value ) ) {
+				return ( $field->sanitize )( '' );
+			}
+
+			return $value;
 		}
 
 		return $this->processor->process( $field, null === $raw ? array() : array( $field->id => $raw ) );
@@ -565,10 +656,20 @@ final class ProductDataFieldStore {
 	protected function is_supported( int $product_id ): bool {
 		// Product existence is the non-overridable floor: the global default filters must never inject into a
 		// non-product post. A consumer's gate only narrows the set of products further.
-		if ( false === \WC_Product_Factory::get_product_type( $product_id ) ) {
-			return false;
-		}
+		return false !== \WC_Product_Factory::get_product_type( $product_id ) && $this->passes_gate( $product_id );
+	}
 
+	/**
+	 * Whether the tab's consumer gate admits a product, regardless of product existence.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   int $product_id Product to check against the gate.
+	 *
+	 * @return  bool
+	 */
+	protected function passes_gate( int $product_id ): bool {
 		$gate = $this->tab()->supports_product;
 
 		return null === $gate || (bool) $gate( $product_id );

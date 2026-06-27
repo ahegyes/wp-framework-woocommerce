@@ -6,6 +6,7 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsField
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
+use DeepWebSolutions\Framework\WooCommerce\Exceptions\InvalidProductDataTabException;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldStore;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataTab;
 use PHPUnit\Framework\TestCase;
@@ -17,6 +18,7 @@ final class ProductDataFieldStoreTest extends TestCase {
 		'woocommerce_process_product_meta',
 		'default_post_metadata',
 		'woocommerce_data_store_wp_post_read_meta',
+		'woocommerce_before_product_object_save',
 	);
 
 	private int $product_id = 0;
@@ -220,14 +222,96 @@ final class ProductDataFieldStoreTest extends TestCase {
 					sanitize: static fn ( mixed $v ): string => \trim( (string) $v ),
 					validate: static fn ( mixed $v ): bool => 'reject' !== $v,
 				),
+				array( 'dws_custom' => $this->noop_renderer() ),
 			),
 		);
 
 		$_POST = array( '_dws-wrwc_general_span' => '  reject  ' );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		// Sanitize trims to 'reject', the validator rejects it, so the field falls back to its default.
-		self::assertSame( 'fallback', $store->get( $this->product_id, 'general', 'span' ) );
+		// Sanitize trims to 'reject'; the validator rejects it, so the field clears to the sanitized empty
+		// (sanitize of an absent submission) rather than the descriptor default.
+		self::assertSame( '', $store->get( $this->product_id, 'general', 'span' ) );
+	}
+
+	public function test_a_custom_field_without_a_renderer_is_rejected_at_registration(): void {
+		$store = new ProductDataFieldStore();
+
+		$this->expectException( InvalidProductDataTabException::class );
+
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField( id: 'span', type: 'dws_custom', label: 'Span', sanitize: static fn ( mixed $v ): string => (string) $v ),
+			),
+		);
+	}
+
+	public function test_a_custom_field_without_a_sanitize_is_rejected_at_registration(): void {
+		$store = new ProductDataFieldStore();
+
+		$this->expectException( InvalidProductDataTabException::class );
+
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField( id: 'span', type: 'dws_custom', label: 'Span' ),
+				array( 'dws_custom' => $this->noop_renderer() ),
+			),
+		);
+	}
+
+	public function test_an_absent_custom_field_stores_the_sanitized_empty_not_a_null_or_default(): void {
+		$store = new ProductDataFieldStore();
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField(
+					id: 'span',
+					type: 'dws_custom',
+					label: 'Span',
+					default_value: 'fallback',
+					sanitize: static fn ( mixed $v ): string => 'sanitized:' . (string) $v,
+				),
+				array( 'dws_custom' => $this->noop_renderer() ),
+			),
+		);
+
+		// The submission omits the custom field entirely; its sanitize runs on the empty string, so the stored
+		// value is the sanitized empty — never a raw null and never the descriptor default.
+		$_POST = array();
+		\do_action( 'woocommerce_process_product_meta', $this->product_id );
+
+		self::assertSame( 'sanitized:', $store->get( $this->product_id, 'general', 'span' ) );
+	}
+
+	public function test_the_before_save_hook_strips_an_injected_default(): void {
+		$store = new ProductDataFieldStore();
+		$store->register_tab( $this->tab() );
+
+		// A fresh read injects the field defaults into the product's meta.
+		\clean_post_cache( $this->product_id );
+		$product = \wc_get_product( $this->product_id );
+		\assert( $product instanceof \WC_Product );
+		self::assertSame( 'global', $product->get_meta( '_dws-wrwc_general_warranty-type', true ) );
+
+		// The hook WooCommerce fires before persisting a product removes that injected default, so a save for
+		// any reason cannot freeze it as a real row; a deliberately set value would survive.
+		\do_action( 'woocommerce_before_product_object_save', $product );
+
+		self::assertSame( '', $product->get_meta( '_dws-wrwc_general_warranty-type', true ) );
+	}
+
+	public function test_the_before_save_hook_keeps_a_set_value(): void {
+		$store = new ProductDataFieldStore();
+		$store->register_tab( $this->tab() );
+
+		\clean_post_cache( $this->product_id );
+		$product = \wc_get_product( $this->product_id );
+		\assert( $product instanceof \WC_Product );
+		$product->update_meta_data( '_dws-wrwc_general_warranty-type', 'addon' );
+
+		// A value the consumer set differs from the injected default, so the strip leaves it to persist.
+		\do_action( 'woocommerce_before_product_object_save', $product );
+
+		self::assertSame( 'addon', $product->get_meta( '_dws-wrwc_general_warranty-type', true ) );
 	}
 
 	// endregion
@@ -407,6 +491,18 @@ final class ProductDataFieldStoreTest extends TestCase {
 		self::assertSame( 'yes', $store->get( $this->product_id, 'general', 'flag' ) );
 	}
 
+	public function test_set_persists_a_value_equal_to_the_default(): void {
+		$store = new ProductDataFieldStore();
+		$store->register_tab( $this->tab() );
+
+		// Setting a field to a value that equals its default must persist a real row — matching the form save's
+		// store-all — rather than be mistaken for an injected default and stripped by the pre-save hook.
+		$store->set( $this->product_id, 'general', 'warranty-type', 'global' );
+
+		self::assertTrue( $store->has( $this->product_id, 'general', 'warranty-type' ) );
+		self::assertSame( 'global', $store->get( $this->product_id, 'general', 'warranty-type' ) );
+	}
+
 	public function test_get_returns_the_descriptor_default_for_an_unstored_supported_field(): void {
 		$store = new ProductDataFieldStore();
 		$store->register_tab( $this->tab() );
@@ -511,13 +607,21 @@ final class ProductDataFieldStoreTest extends TestCase {
 		);
 	}
 
-	private function tab_with( SettingsField $field ): ProductDataTab {
+	/**
+	 * @param array<string, callable> $custom_renderers
+	 */
+	private function tab_with( SettingsField $field, array $custom_renderers = array() ): ProductDataTab {
 		return new ProductDataTab(
 			slug: 'dws_warranty',
 			label: 'Warranty',
 			meta_key_prefix: '_dws-wrwc_',
 			sections: array( new SettingsSection( 'general', 'General', array( $field ) ) ),
+			custom_renderers: $custom_renderers,
 		);
+	}
+
+	private function noop_renderer(): \Closure {
+		return static function ( SettingsField $field, mixed $value, string $meta_key ): void {};
 	}
 
 	// endregion
