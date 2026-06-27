@@ -96,7 +96,7 @@ final class ProductDataFieldStore {
 		\add_action( 'woocommerce_product_data_panels', fn () => $this->render_panel() );
 		\add_action( 'woocommerce_process_product_meta', fn ( int $product_id ) => $this->save( $product_id ) );
 		\add_filter( 'default_post_metadata', fn ( mixed $value, int $object_id, string $meta_key ): mixed => $this->inject_default( $value, $object_id, $meta_key ), 99, 3 );
-		\add_filter( 'woocommerce_data_store_wp_post_read_meta', fn ( array $meta_data, object $object ): array => $this->inject_default_bulk( $meta_data, $object ), 99, 2 );
+		\add_filter( 'woocommerce_data_store_wp_post_read_meta', fn ( array $meta_data, object $wc_object ): array => $this->inject_default_bulk( $meta_data, $wc_object ), 99, 2 );
 	}
 
 	/**
@@ -373,12 +373,12 @@ final class ProductDataFieldStore {
 	 * @version 2.0.0
 	 *
 	 * @param   array<int, object> $meta_data Raw meta rows WooCommerce read for the object.
-	 * @param   object             $object    Object the meta was read for.
+	 * @param   object             $wc_object    Object the meta was read for.
 	 *
 	 * @return  array<int, object>
 	 */
-	protected function inject_default_bulk( array $meta_data, object $object ): array {
-		if ( ! $object instanceof \WC_Product || ! $this->is_supported( $object->get_id() ) ) {
+	protected function inject_default_bulk( array $meta_data, object $wc_object ): array {
+		if ( ! $wc_object instanceof \WC_Product || ! $this->is_supported( $wc_object->get_id() ) ) {
 			return $meta_data;
 		}
 
@@ -507,7 +507,7 @@ final class ProductDataFieldStore {
 
 		if ( null === $type ) {
 			// A custom type has no taxonomy processor; run its own sanitize/validate, falling back to the default.
-			return $this->sanitize_and_validate( $field, $raw, $field->default );
+			return $this->sanitize_and_validate( $field, $raw, $field->default_value );
 		}
 
 		return $this->processor->process( $field, null === $raw ? array() : array( $field->id => $raw ) );
@@ -548,8 +548,8 @@ final class ProductDataFieldStore {
 	 */
 	protected function default_value( SettingsField $field ): mixed {
 		return FieldType::Checkbox === FieldType::tryFrom( $field->type )
-			? to_yes_no( $field->default )
-			: $field->default;
+			? to_yes_no( $field->default_value )
+			: $field->default_value;
 	}
 
 	/**

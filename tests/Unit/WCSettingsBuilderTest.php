@@ -110,7 +110,7 @@ final class WCSettingsBuilderTest extends TestCase {
 
 	public function test_a_truthy_checkbox_default_maps_to_the_wc_yes_string(): void {
 		$page = $this->page_with_field(
-			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default: true ),
+			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: true ),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
@@ -120,7 +120,7 @@ final class WCSettingsBuilderTest extends TestCase {
 
 	public function test_a_falsy_checkbox_default_maps_to_the_wc_no_string(): void {
 		$page = $this->page_with_field(
-			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default: false ),
+			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: false ),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
@@ -130,7 +130,7 @@ final class WCSettingsBuilderTest extends TestCase {
 
 	public function test_a_truthy_non_boolean_checkbox_default_maps_to_the_wc_yes_string(): void {
 		$page = $this->page_with_field(
-			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default: 1 ),
+			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: 1 ),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
@@ -140,7 +140,7 @@ final class WCSettingsBuilderTest extends TestCase {
 
 	public function test_a_string_yes_checkbox_default_maps_to_the_wc_yes_string(): void {
 		$page = $this->page_with_field(
-			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default: 'yes' ),
+			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: 'yes' ),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
@@ -151,7 +151,7 @@ final class WCSettingsBuilderTest extends TestCase {
 	public function test_a_string_no_checkbox_default_maps_to_the_wc_no_string(): void {
 		// Canonical rule: 'no' is unchecked. The superseded (bool) cast mapped the truthy 'no' to 'yes'.
 		$page = $this->page_with_field(
-			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default: 'no' ),
+			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: 'no' ),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
@@ -162,7 +162,7 @@ final class WCSettingsBuilderTest extends TestCase {
 	public function test_an_arbitrary_string_checkbox_default_maps_to_the_wc_no_string(): void {
 		// Canonical rule: any non-canonical string is unchecked. The superseded (bool) cast mapped it to 'yes'.
 		$page = $this->page_with_field(
-			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default: 'anything' ),
+			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: 'anything' ),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
@@ -247,7 +247,7 @@ final class WCSettingsBuilderTest extends TestCase {
 
 	public function test_multiselect_default_values_are_stringified(): void {
 		$page = $this->page_with_field(
-			new SettingsField( id: 'tags', type: 'multiselect', label: 'Tags', default: array( 1, 2 ), options: array( 1 => 'One', 2 => 'Two' ) ),
+			new SettingsField( id: 'tags', type: 'multiselect', label: 'Tags', default_value: array( 1, 2 ), options: array( 1 => 'One', 2 => 'Two' ) ),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_tags' );
@@ -257,7 +257,7 @@ final class WCSettingsBuilderTest extends TestCase {
 
 	public function test_a_non_array_multiselect_default_becomes_an_empty_array(): void {
 		$page = $this->page_with_field(
-			new SettingsField( id: 'tags', type: 'multiselect', label: 'Tags', default: 'oops', options: array( 'a' => 'A' ) ),
+			new SettingsField( id: 'tags', type: 'multiselect', label: 'Tags', default_value: 'oops', options: array( 'a' => 'A' ) ),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_tags' );
@@ -288,7 +288,7 @@ final class WCSettingsBuilderTest extends TestCase {
 					'general',
 					'General',
 					array(
-						new SettingsField( id: 'store_name', type: 'text', label: 'Store Name', default: 'Acme' ),
+						new SettingsField( id: 'store_name', type: 'text', label: 'Store Name', default_value: 'Acme' ),
 						new SettingsField( id: 'gateway', type: 'select', label: 'Gateway', options: array( 'stripe' => 'Stripe', 'paypal' => 'PayPal' ) ),
 					),
 				),

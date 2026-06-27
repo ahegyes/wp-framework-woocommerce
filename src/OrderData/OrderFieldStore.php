@@ -221,7 +221,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 		\add_meta_box(
 			$box->id,
 			\esc_html( $box->title ),
-			fn ( mixed $object ) => $this->render_box( $box, $object ),
+			fn ( mixed $wc_object ) => $this->render_box( $box, $wc_object ),
 			$screen,
 			$box->context,
 			$priority,
@@ -235,10 +235,10 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @version 2.0.0
 	 *
 	 * @param   ObjectMetaBox $box    Box being rendered.
-	 * @param   mixed         $object Screen object WordPress passes the callback (a WooCommerce order or WP_Post).
+	 * @param   mixed         $wc_object Screen object WordPress passes the callback (a WooCommerce order or WP_Post).
 	 */
-	protected function render_box( ObjectMetaBox $box, mixed $object ): void {
-		$object_id = $this->object_id_of( $object );
+	protected function render_box( ObjectMetaBox $box, mixed $wc_object ): void {
+		$object_id = $this->object_id_of( $wc_object );
 
 		// Emitted for every box, bespoke renderer included: save_box() verifies this nonce before it runs
 		// the bespoke save handler, so a bespoke renderer must not have to reimplement the convention.
@@ -283,7 +283,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 		if ( false === \wp_verify_nonce( $nonce, $this->nonce_action( $box, $object_id ) ) ) {
 			return;
 		}
-		if ( ! \current_user_can( 'edit_shop_orders' ) ) {
+		if ( ! \current_user_can( 'edit_shop_orders' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- edit_shop_orders is a core WooCommerce capability.
 			return;
 		}
 
@@ -347,7 +347,7 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @return  list<SettingsField>
 	 */
 	protected function fields_of( ObjectMetaBox $box, int $object_id ): array {
-		/** @var list<SettingsField> $fields */
+		/** @var list<SettingsField> $fields */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort -- inline @var type assertion, no description applies.
 		$fields = ( $box->fields_provider )( $object_id );
 
 		$seen = array();
@@ -368,16 +368,16 @@ final class OrderFieldStore implements ObjectFieldStoreInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   mixed $object Screen object (a WooCommerce order or WP_Post), or anything else.
+	 * @param   mixed $wc_object Screen object (a WooCommerce order or WP_Post), or anything else.
 	 *
 	 * @return  int
 	 */
-	protected function object_id_of( mixed $object ): int {
-		if ( $object instanceof \WC_Abstract_Order ) {
-			return $object->get_id();
+	protected function object_id_of( mixed $wc_object ): int {
+		if ( $wc_object instanceof \WC_Abstract_Order ) {
+			return $wc_object->get_id();
 		}
-		if ( $object instanceof \WP_Post ) {
-			return $object->ID;
+		if ( $wc_object instanceof \WP_Post ) {
+			return $wc_object->ID;
 		}
 
 		return 0;

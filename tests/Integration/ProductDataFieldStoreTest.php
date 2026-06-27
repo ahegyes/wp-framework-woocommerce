@@ -216,7 +216,7 @@ final class ProductDataFieldStoreTest extends TestCase {
 					id: 'span',
 					type: 'dws_custom',
 					label: 'Span',
-					default: 'fallback',
+					default_value: 'fallback',
 					sanitize: static fn ( mixed $v ): string => \trim( (string) $v ),
 					validate: static fn ( mixed $v ): bool => 'reject' !== $v,
 				),
@@ -501,7 +501,7 @@ final class ProductDataFieldStoreTest extends TestCase {
 					'general',
 					'General',
 					array(
-						new SettingsField( id: 'warranty-type', type: 'select', label: 'Type', default: 'global', options: array( 'global' => 'Global', 'addon' => 'Add-on' ) ),
+						new SettingsField( id: 'warranty-type', type: 'select', label: 'Type', default_value: 'global', options: array( 'global' => 'Global', 'addon' => 'Add-on' ) ),
 						new SettingsField( id: 'code', type: 'text', label: 'Code' ),
 					),
 				),

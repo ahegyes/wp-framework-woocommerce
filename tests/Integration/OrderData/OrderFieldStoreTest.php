@@ -304,7 +304,7 @@ final class OrderFieldStoreTest extends TestCase {
 			context: 'side',
 			priority: 'default',
 			fields_provider: static fn ( int $object_id ): array => array(
-				new SettingsField( id: 'note', type: 'text', label: 'Note', default: 'preset' ),
+				new SettingsField( id: 'note', type: 'text', label: 'Note', default_value: 'preset' ),
 			),
 		);
 		$store = new OrderFieldStore();

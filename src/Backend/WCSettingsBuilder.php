@@ -100,7 +100,7 @@ final class WCSettingsBuilder {
 			'title' => $field->label,
 		);
 
-		if ( null !== $field->default ) {
+		if ( null !== $field->default_value ) {
 			$entry['default'] = $this->map_default( $field );
 		}
 
@@ -129,10 +129,10 @@ final class WCSettingsBuilder {
 	 */
 	protected function map_default( SettingsField $field ): mixed {
 		return match ( $field->type ) {
-			FieldType::Checkbox->value    => to_yes_no( $field->default ),
+			FieldType::Checkbox->value    => to_yes_no( $field->default_value ),
 			// WooCommerce matches multiselect selections with a strict (string) in_array, so the set must be strings.
-			FieldType::Multiselect->value => $this->stringify_selected( $field->default ),
-			default                       => $field->default,
+			FieldType::Multiselect->value => $this->stringify_selected( $field->default_value ),
+			default                       => $field->default_value,
 		};
 	}
 
@@ -182,18 +182,18 @@ final class WCSettingsBuilder {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   mixed $default Field default to coerce into a list of selected string values.
+	 * @param   mixed $default_value Field default to coerce into a list of selected string values.
 	 *
 	 * @return  array<array-key, string>
 	 */
-	protected function stringify_selected( mixed $default ): array {
-		if ( ! \is_array( $default ) ) {
+	protected function stringify_selected( mixed $default_value ): array {
+		if ( ! \is_array( $default_value ) ) {
 			return array();
 		}
 
 		return \array_map(
 			static fn ( mixed $value ): string => \is_scalar( $value ) ? (string) $value : '',
-			$default,
+			$default_value,
 		);
 	}
 
