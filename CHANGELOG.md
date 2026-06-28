@@ -8,6 +8,9 @@ Pending entries live in [`changelog/`](./changelog) — add via `composer change
 
 ### Added
 
-- **Complete rewrite of v1.** Lean library architecture: interfaces + final classes, PSR-11 throughout. PHP 8.5+, WordPress 7.0+, WooCommerce 9.5+ (HPOS-ready).
-- **WooCommerce settings backend** — implements the framework's settings backend contract against WooCommerce's native settings API.
-- **WC-aware helpers** — utilities specific to WooCommerce plugin development.
+- **Complete rewrite of v1.** Lean library architecture: interfaces + final classes, PSR-11/PSR-3. PHP 8.5+, WordPress 7.0+, WooCommerce 9.5+ (HPOS-ready).
+- **WooCommerce settings backend** — implements the framework's settings backend contract against WooCommerce's native settings API, binding one settings page per descriptor with field-level capability enforcement.
+- **Product-data settings tab** — declares product-data fields over WooCommerce's native product panels, injecting a field's default for products that predate it.
+- **Order-data fields** — HPOS-aware order meta-box field storage.
+- **WooCommerce conditionals** — plugin-version and database-version gates.
+- **WooCommerce logger** — a PSR-3 adapter over WooCommerce's logging.
