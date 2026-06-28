@@ -9,11 +9,13 @@ use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataTab;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
+use PHPUnit\Framework\Attributes\UsesFunction;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( ProductDataTab::class )]
 #[UsesClass( SettingsField::class )]
 #[UsesClass( SettingsSection::class )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier' )]
 final class ProductDataTabTest extends TestCase {
 	public function test_minimal_construction_exposes_defaults(): void {
 		$tab = new ProductDataTab( slug: 'dws_warranty', label: 'Warranty', meta_key_prefix: '_dws-wrwc_', sections: array() );

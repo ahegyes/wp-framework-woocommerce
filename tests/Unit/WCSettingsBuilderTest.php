@@ -9,6 +9,7 @@ use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\Backend\WCSettingsBuilder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
+use PHPUnit\Framework\Attributes\UsesFunction;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( WCSettingsBuilder::class )]
@@ -16,6 +17,10 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( SettingsField::class )]
 #[UsesClass( SettingsPage::class )]
 #[UsesClass( SettingsSection::class )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_checkbox_checked' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\WooCommerce\to_yes_no' )]
 final class WCSettingsBuilderTest extends TestCase {
 	public function test_emits_a_title_fields_sectionend_sequence_per_section(): void {
 		$built = ( new WCSettingsBuilder() )->build( $this->page() );

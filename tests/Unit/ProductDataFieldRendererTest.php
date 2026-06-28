@@ -8,12 +8,17 @@ use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldRenderer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
+use PHPUnit\Framework\Attributes\UsesFunction;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( ProductDataFieldRenderer::class )]
 #[UsesClass( SettingsField::class )]
 #[UsesClass( OptionsResolver::class )]
 #[UsesClass( FieldType::class )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_checkbox_checked' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\WooCommerce\to_yes_no' )]
 final class ProductDataFieldRendererTest extends TestCase {
 	public function test_text_args_carry_id_name_label_value_and_type(): void {
 		$field = new SettingsField( id: 'store', type: 'text', label: 'Store' );

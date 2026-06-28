@@ -4,11 +4,13 @@ namespace DeepWebSolutions\Framework\WooCommerce\Tests\Unit;
 
 use PHPUnit\Framework\Attributes\CoversFunction;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\UsesFunction;
 use PHPUnit\Framework\TestCase;
 
 use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
 
 #[CoversFunction( 'DeepWebSolutions\Framework\WooCommerce\to_yes_no' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_checkbox_checked' )]
 final class FunctionsTest extends TestCase {
 	#[DataProvider( 'yes_no_matrix' )]
 	public function test_maps_a_value_to_the_wc_yes_no_string( mixed $value, string $expected ): void {
