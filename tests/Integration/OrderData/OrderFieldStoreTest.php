@@ -80,6 +80,9 @@ final class OrderFieldStoreTest extends TestCase {
 	}
 
 	protected function tearDown(): void {
+		// Drop the HPOS override before the order lookup so cleanup runs against the real storage mode.
+		\remove_all_filters( 'option_woocommerce_custom_orders_table_enabled' );
+
 		$order = \wc_get_order( $this->order_id );
 		if ( $order instanceof \WC_Order ) {
 			$order->delete( true );
@@ -113,6 +116,26 @@ final class OrderFieldStoreTest extends TestCase {
 			self::assertNotFalse( \has_action( 'add_meta_boxes_admin_page_wc-orders' ) );
 			self::assertFalse( \has_action( 'add_meta_boxes_shop_order' ) );
 		}
+	}
+
+	public function test_register_targets_the_legacy_post_screen_when_hpos_is_disabled(): void {
+		\add_filter( 'option_woocommerce_custom_orders_table_enabled', static fn (): string => 'no' );
+
+		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+
+		self::assertNotFalse( \has_action( 'add_meta_boxes_shop_order' ) );
+		self::assertFalse( \has_action( 'add_meta_boxes_woocommerce_page_wc-orders' ) );
+		self::assertFalse( \has_action( 'add_meta_boxes_admin_page_wc-orders' ) );
+	}
+
+	public function test_register_targets_both_hpos_screens_when_hpos_is_enabled(): void {
+		\add_filter( 'option_woocommerce_custom_orders_table_enabled', static fn (): string => 'yes' );
+
+		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+
+		self::assertNotFalse( \has_action( 'add_meta_boxes_woocommerce_page_wc-orders' ) );
+		self::assertNotFalse( \has_action( 'add_meta_boxes_admin_page_wc-orders' ) );
+		self::assertFalse( \has_action( 'add_meta_boxes_shop_order' ) );
 	}
 
 	public function test_the_registered_box_renders_a_nonce_and_its_field_control(): void {
