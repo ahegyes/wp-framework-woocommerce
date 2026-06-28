@@ -2,7 +2,7 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions;
 
-use DeepWebSolutions\Framework\Shared\Exception\AbstractRuntimeException;
+use DeepWebSolutions\Framework\Shared\Exception\AbstractInvalidArgumentException;
 
 /**
  * Thrown when a product-data tab descriptor is malformed or incomplete — a tab slug outside the slug charset
@@ -12,4 +12,4 @@ use DeepWebSolutions\Framework\Shared\Exception\AbstractRuntimeException;
  * @since   2.0.0
  * @version 2.0.0
  */
-final class InvalidProductDataTabException extends AbstractRuntimeException {}
+final class InvalidProductDataTabException extends AbstractInvalidArgumentException {}

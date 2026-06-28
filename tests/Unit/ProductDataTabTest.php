@@ -114,6 +114,12 @@ final class ProductDataTabTest extends TestCase {
 		new ProductDataTab( slug: $slug, label: 'L', meta_key_prefix: '_p_', sections: array() );
 	}
 
+	public function test_an_invalid_slug_throws_an_invalid_argument(): void {
+		$this->expectException( \InvalidArgumentException::class );
+
+		new ProductDataTab( slug: '1tab', label: 'L', meta_key_prefix: '_p_', sections: array() );
+	}
+
 	/**
 	 * @return array<string, array{string}>
 	 */
