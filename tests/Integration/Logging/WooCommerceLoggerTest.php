@@ -5,6 +5,7 @@ namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Logging;
 use DeepWebSolutions\Framework\WooCommerce\Logging\WooCommerceLogger;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\InvalidArgumentException;
 
 #[CoversClass( WooCommerceLogger::class )]
 final class WooCommerceLoggerTest extends TestCase {
@@ -43,6 +44,22 @@ final class WooCommerceLoggerTest extends TestCase {
 		( new WooCommerceLogger( 'plugin/framework' ) )->error( 'boot failure' );
 
 		$this->expectNotToPerformAssertions();
+	}
+
+	public function test_an_unknown_level_is_rejected(): void {
+		$logger = new WooCommerceLogger( 'plugin/framework', new RecordingWCLogger() );
+
+		$this->expectException( InvalidArgumentException::class );
+
+		$logger->log( 'verbose', 'nope' );
+	}
+
+	public function test_a_non_string_level_is_rejected(): void {
+		$logger = new WooCommerceLogger( 'plugin/framework', new RecordingWCLogger() );
+
+		$this->expectException( InvalidArgumentException::class );
+
+		$logger->log( new \stdClass(), 'nope' );
 	}
 }
 
