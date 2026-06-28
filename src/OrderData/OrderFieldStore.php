@@ -197,8 +197,8 @@ final class OrderFieldStore {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   MetaBoxPlacement     $placement Placement whose capability override, if any, takes precedence.
-	 * @param   \WC_Abstract_Order   $order     Order being edited.
+	 * @param   MetaBoxPlacement   $placement Placement whose capability override, if any, takes precedence.
+	 * @param   \WC_Abstract_Order $order     Order being edited.
 	 *
 	 * @return  bool
 	 */
