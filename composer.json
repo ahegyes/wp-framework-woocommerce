@@ -20,7 +20,8 @@
     "php": ">=8.5",
     "ahegyes/wp-framework-core": "^2.0@dev",
     "ahegyes/wp-framework-settings": "^2.0@dev",
-    "ahegyes/wp-framework-shared": "^2.0@dev"
+    "ahegyes/wp-framework-shared": "^2.0@dev",
+    "psr/log": "^3"
   },
 
   "minimum-stability": "dev",
