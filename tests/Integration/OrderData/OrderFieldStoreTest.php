@@ -3,8 +3,9 @@
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration\OrderData;
 
 use Automattic\WooCommerce\Utilities\OrderUtil;
-use DeepWebSolutions\Framework\Settings\ObjectField\Exceptions\InvalidObjectMetaBoxException;
-use DeepWebSolutions\Framework\Settings\ObjectField\ValueObjects\ObjectMetaBox;
+use DeepWebSolutions\Framework\Settings\MetaField\ObjectFieldForm;
+use DeepWebSolutions\Framework\Settings\MetaField\ValueObjects\FieldGroup;
+use DeepWebSolutions\Framework\Settings\MetaField\ValueObjects\MetaBoxPlacement;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\FieldRenderer;
@@ -12,13 +13,18 @@ use DeepWebSolutions\Framework\Settings\Schema\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\CustomFieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\WooCommerce\Exceptions\UnsupportedOrderScreenException;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderFieldStore;
+use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderMetaRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( OrderFieldStore::class )]
-#[UsesClass( ObjectMetaBox::class )]
+#[UsesClass( ObjectFieldForm::class )]
+#[UsesClass( OrderMetaRepository::class )]
+#[UsesClass( FieldGroup::class )]
+#[UsesClass( MetaBoxPlacement::class )]
 #[UsesClass( SettingsField::class )]
 #[UsesClass( FieldRenderer::class )]
 #[UsesClass( FieldProcessor::class )]
@@ -26,7 +32,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( FieldType::class )]
 #[UsesClass( CustomFieldType::class )]
 final class OrderFieldStoreTest extends TestCase {
-	private const BOX_ID       = 'dws_unlock';
+	private const GROUP_ID     = 'dws_unlock';
 	private const NONCE_NAME   = 'dws_object_field_dws_unlock_nonce';
 	private const NONCE_ACTION = 'dws_object_field_dws_unlock';
 
@@ -52,8 +58,6 @@ final class OrderFieldStoreTest extends TestCase {
 			self::markTestSkipped( 'WooCommerce is not active.' );
 		}
 
-		// add_meta_box() and WP_Screen (its screen resolution) live in the admin includes, loaded on
-		// real admin requests where add_meta_boxes_{screen} fires; the CLI context must require them.
 		require_once ABSPATH . 'wp-admin/includes/template.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
 		require_once ABSPATH . 'wp-admin/includes/screen.php';
@@ -61,9 +65,6 @@ final class OrderFieldStoreTest extends TestCase {
 
 		\wp_set_current_user( 1 );
 
-		// Isolate this store's hooks (the order save and each order screen's add_meta_boxes) without
-		// stripping WooCommerce's own callbacks for the rest of the process: stash each hook's WP_Hook
-		// and unset it here, restoring the originals in tearDown.
 		global $wp_filter;
 		foreach ( self::ISOLATED_HOOKS as $hook ) {
 			$this->saved_hooks[ $hook ] = $wp_filter[ $hook ] ?? null;
@@ -98,62 +99,16 @@ final class OrderFieldStoreTest extends TestCase {
 		parent::tearDown();
 	}
 
-	public function test_set_and_get_round_trip_on_an_order(): void {
-		$store = new OrderFieldStore();
-
-		$store->set( $this->order_id, '_dws_unlocked', 'yes' );
-
-		self::assertSame( 'yes', $store->get( $this->order_id, '_dws_unlocked' ) );
-	}
-
-	public function test_get_returns_the_default_when_nothing_is_stored(): void {
-		$store = new OrderFieldStore();
-
-		self::assertSame( 'fallback', $store->get( $this->order_id, '_dws_absent', 'fallback' ) );
-	}
-
-	public function test_has_reports_presence_and_delete_removes_the_value(): void {
-		$store = new OrderFieldStore();
-
-		self::assertFalse( $store->has( $this->order_id, '_dws_flag' ) );
-
-		$store->set( $this->order_id, '_dws_flag', '1' );
-		self::assertTrue( $store->has( $this->order_id, '_dws_flag' ) );
-
-		self::assertTrue( $store->delete( $this->order_id, '_dws_flag' ) );
-		self::assertFalse( $store->has( $this->order_id, '_dws_flag' ) );
-		self::assertFalse( $store->delete( $this->order_id, '_dws_flag' ) );
-	}
-
-	public function test_crud_falls_back_to_post_meta_for_a_non_order_id(): void {
-		$post_id = \wp_insert_post( array( 'post_title' => 'Probe', 'post_status' => 'publish' ) );
-		\assert( \is_int( $post_id ) );
-		self::assertFalse( \wc_get_order( $post_id ) ); // guarantee the non-order fallback branch, not an id collision
-		$store = new OrderFieldStore();
-
-		$store->set( $post_id, '_dws_post_key', 'value' );
-
-		self::assertSame( 'value', \get_post_meta( $post_id, '_dws_post_key', true ) ); // landed in post meta, not order meta
-		self::assertSame( 'value', $store->get( $post_id, '_dws_post_key' ) );
-		self::assertTrue( $store->has( $post_id, '_dws_post_key' ) );
-		self::assertTrue( $store->delete( $post_id, '_dws_post_key' ) );
-		self::assertFalse( $store->has( $post_id, '_dws_post_key' ) );
-
-		\wp_delete_post( $post_id, true );
-	}
-
-	public function test_register_meta_box_registers_on_the_resolved_order_screen(): void {
-		$screen = OrderUtil::custom_orders_table_usage_is_enabled() ? 'woocommerce_page_wc-orders' : 'shop_order';
+	public function test_register_adds_the_box_on_the_resolved_order_screen(): void {
+		$screen = $this->order_screen();
 		\set_current_screen( $screen );
 
-		( new OrderFieldStore() )->register_meta_box( $this->box() );
-		\do_action( "add_meta_boxes_$screen" );
+		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
-		self::assertArrayHasKey( self::BOX_ID, $this->boxes_on( $screen ) );
+		self::assertArrayHasKey( self::GROUP_ID, $this->boxes_on( $screen ) );
 
 		if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
-			// Both HPOS order screens are hooked — the menu-visible page and the admin.php variant for a
-			// user who cannot view the WooCommerce menu — while the legacy screen is not.
 			self::assertNotFalse( \has_action( 'add_meta_boxes_woocommerce_page_wc-orders' ) );
 			self::assertNotFalse( \has_action( 'add_meta_boxes_admin_page_wc-orders' ) );
 			self::assertFalse( \has_action( 'add_meta_boxes_shop_order' ) );
@@ -161,35 +116,26 @@ final class OrderFieldStoreTest extends TestCase {
 	}
 
 	public function test_the_registered_box_renders_a_nonce_and_its_field_control(): void {
-		$screen = OrderUtil::custom_orders_table_usage_is_enabled() ? 'woocommerce_page_wc-orders' : 'shop_order';
+		$screen = $this->order_screen();
 		\set_current_screen( $screen );
 
-		( new OrderFieldStore() )->register_meta_box( $this->box() );
-		\do_action( "add_meta_boxes_$screen" );
+		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
-		$definition = (array) ( $this->boxes_on( $screen )[ self::BOX_ID ] ?? array() );
-		$callback   = $definition['callback'] ?? null;
-		\assert( \is_callable( $callback ) );
-
-		\ob_start();
-		$callback( \wc_get_order( $this->order_id ) );
-		$html = (string) \ob_get_clean();
+		$html = $this->render_box( $screen );
 
 		self::assertStringContainsString( self::NONCE_NAME, $html );
 		self::assertStringContainsString( 'name="dws_unlock[unlocked]"', $html );
 	}
 
-	public function test_a_bespoke_render_and_save_descriptor_emits_the_nonce_and_saves(): void {
-		$screen = OrderUtil::custom_orders_table_usage_is_enabled() ? 'woocommerce_page_wc-orders' : 'shop_order';
+	public function test_a_bespoke_render_and_save_group_emits_the_nonce_and_saves(): void {
+		$screen = $this->order_screen();
 		\set_current_screen( $screen );
 
 		$saved_for = 0;
-		$box       = new ObjectMetaBox(
-			id: self::BOX_ID,
+		$group     = new FieldGroup(
+			id: self::GROUP_ID,
 			title: 'Bespoke',
-			screen: 'shop_order',
-			context: 'side',
-			priority: 'default',
 			fields_provider: static fn ( int $object_id ): array => array(),
 			render: static fn ( int $object_id ): string => '<p>bespoke</p>',
 			save: function ( int $object_id ) use ( &$saved_for ): void {
@@ -197,205 +143,145 @@ final class OrderFieldStoreTest extends TestCase {
 			},
 		);
 		$store = new OrderFieldStore();
-		$store->register_meta_box( $box );
-		\do_action( "add_meta_boxes_$screen" );
+		$store->register( $group, $this->placement() );
+		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
-		// A bespoke renderer still emits the store nonce, so the bespoke save's guard can pass.
-		$definition = (array) ( $this->boxes_on( $screen )[ self::BOX_ID ] ?? array() );
-		$callback   = $definition['callback'] ?? null;
-		\assert( \is_callable( $callback ) );
-		\ob_start();
-		$callback( \wc_get_order( $this->order_id ) );
-		$html = (string) \ob_get_clean();
+		$html = $this->render_box( $screen );
 		self::assertStringContainsString( self::NONCE_NAME, $html );
 		self::assertStringContainsString( 'bespoke', $html );
 
-		// And the bespoke save handler runs once the nonce is valid.
 		$_POST = array( self::NONCE_NAME => $this->nonce() );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 		self::assertSame( $this->order_id, $saved_for );
 	}
 
 	public function test_a_truthy_submission_is_stored_and_a_falsy_one_deletes_the_meta(): void {
+		$repo  = new OrderMetaRepository();
 		$store = new OrderFieldStore();
-		$store->register_meta_box( $this->box() );
+		$store->register( $this->group(), $this->placement() );
 
-		// Checkbox checked → meta stored.
-		$_POST = array(
-			self::NONCE_NAME => $this->nonce(),
-			self::BOX_ID     => array( 'unlocked' => '1' ),
-		);
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'unlocked' => '1' ) );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
-		self::assertTrue( $store->has( $this->order_id, 'unlocked' ) );
+		self::assertTrue( $repo->has( $this->order_id, 'unlocked' ) );
 
-		// Checkbox unchecked (absent from the submission) → meta deleted (revoke semantics).
 		$_POST = array( self::NONCE_NAME => $this->nonce() );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
-		self::assertFalse( $store->has( $this->order_id, 'unlocked' ) );
+		self::assertFalse( $repo->has( $this->order_id, 'unlocked' ) );
 	}
 
 	public function test_a_zero_value_is_stored_not_revoked(): void {
-		$box = new ObjectMetaBox(
-			id: self::BOX_ID,
-			title: 'Note',
-			screen: 'shop_order',
-			context: 'side',
-			priority: 'default',
-			fields_provider: static fn ( int $object_id ): array => array(
-				new SettingsField( id: 'note', type: 'text', label: 'Note' ),
-			),
-		);
+		$repo  = new OrderMetaRepository();
 		$store = new OrderFieldStore();
-		$store->register_meta_box( $box );
+		$store->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
 
-		// A literal "0" is a real value, not an empty submission, so it must persist rather than revoke.
-		$_POST = array(
-			self::NONCE_NAME => $this->nonce(),
-			self::BOX_ID     => array( 'note' => '0' ),
-		);
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'note' => '0' ) );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
-		self::assertTrue( $store->has( $this->order_id, 'note' ) );
-		self::assertSame( '0', $store->get( $this->order_id, 'note' ) );
+		self::assertTrue( $repo->has( $this->order_id, 'note' ) );
+		self::assertSame( '0', $repo->get( $this->order_id, 'note' ) );
 	}
 
 	public function test_save_is_skipped_without_a_valid_nonce(): void {
+		$repo  = new OrderMetaRepository();
 		$store = new OrderFieldStore();
-		$store->register_meta_box( $this->box() );
+		$store->register( $this->group(), $this->placement() );
 
-		$_POST = array( self::BOX_ID => array( 'unlocked' => '1' ) );
+		$_POST = array( self::GROUP_ID => array( 'unlocked' => '1' ) );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
-		self::assertFalse( $store->has( $this->order_id, 'unlocked' ) );
+		self::assertFalse( $repo->has( $this->order_id, 'unlocked' ) );
 	}
 
-	/**
-	 * @return array<string, mixed>
-	 */
-	private function boxes_on( string $screen ): array {
-		global $wp_meta_boxes;
-		$by_priority = (array) ( ( (array) ( ( (array) $wp_meta_boxes )[ $screen ] ?? array() ) )['side'] ?? array() );
-
-		return (array) ( $by_priority['default'] ?? array() );
-	}
-
-	public function test_the_post_meta_fallback_preserves_backslashes(): void {
-		$post_id = \wp_insert_post( array( 'post_title' => 'Probe', 'post_status' => 'publish' ) );
-		\assert( \is_int( $post_id ) );
-		self::assertFalse( \wc_get_order( $post_id ) );
-		$store = new OrderFieldStore();
-
-		$store->set( $post_id, '_dws_path', 'C:\\Users\\dev\\file.txt' );
-
-		// update_post_meta() unslashes internally; without the compensating slash the backslashes drop.
-		self::assertSame( 'C:\\Users\\dev\\file.txt', $store->get( $post_id, '_dws_path' ) );
-
-		\wp_delete_post( $post_id, true );
-	}
-
-	public function test_clearing_a_field_with_a_default_revokes_it_without_restoring_the_default(): void {
-		$screen = OrderUtil::custom_orders_table_usage_is_enabled() ? 'woocommerce_page_wc-orders' : 'shop_order';
-		\set_current_screen( $screen );
-
-		$box = new ObjectMetaBox(
-			id: self::BOX_ID,
-			title: 'Note',
-			screen: 'shop_order',
-			context: 'side',
-			priority: 'default',
-			fields_provider: static fn ( int $object_id ): array => array(
-				new SettingsField( id: 'note', type: 'text', label: 'Note', default_value: 'preset' ),
-			),
-		);
-		$store = new OrderFieldStore();
-		$store->register_meta_box( $box );
-
-		// Store a value, then submit it empty: delete-on-falsy revokes the meta.
-		$_POST = array( self::NONCE_NAME => $this->nonce(), self::BOX_ID => array( 'note' => 'typed' ) );
-		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
-		self::assertSame( 'typed', $store->get( $this->order_id, 'note' ) );
-
-		$_POST = array( self::NONCE_NAME => $this->nonce(), self::BOX_ID => array( 'note' => '' ) );
-		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
-		self::assertFalse( $store->has( $this->order_id, 'note' ) );
-
-		// The cleared field renders unset — its non-empty default must not spring back.
-		\do_action( "add_meta_boxes_$screen" );
-		$definition = (array) ( $this->boxes_on( $screen )[ self::BOX_ID ] ?? array() );
-		$callback   = $definition['callback'] ?? null;
-		\assert( \is_callable( $callback ) );
-		\ob_start();
-		$callback( \wc_get_order( $this->order_id ) );
-		$html = (string) \ob_get_clean();
-		self::assertStringNotContainsString( 'preset', $html );
-	}
-
-	public function test_register_meta_box_also_registers_on_the_restricted_hpos_screen(): void {
+	public function test_register_also_registers_on_the_restricted_hpos_screen(): void {
 		if ( ! OrderUtil::custom_orders_table_usage_is_enabled() ) {
 			self::markTestSkipped( 'Requires HPOS for the admin.php order screen variant.' );
 		}
 		\set_current_screen( 'admin_page_wc-orders' );
 
-		( new OrderFieldStore() )->register_meta_box( $this->box() );
-		\do_action( 'add_meta_boxes_admin_page_wc-orders' );
+		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		\do_action( 'add_meta_boxes_admin_page_wc-orders', \wc_get_order( $this->order_id ) );
 
-		self::assertArrayHasKey( self::BOX_ID, $this->boxes_on( 'admin_page_wc-orders' ) );
+		self::assertArrayHasKey( self::GROUP_ID, $this->boxes_on( 'admin_page_wc-orders' ) );
 	}
 
 	public function test_a_field_meta_key_overrides_the_id_for_storage(): void {
-		$box = new ObjectMetaBox(
-			id: self::BOX_ID,
-			title: 'Unlock',
-			screen: 'shop_order',
-			context: 'side',
-			priority: 'default',
-			fields_provider: static fn ( int $object_id ): array => array(
-				new SettingsField( id: 'unlocked', type: 'checkbox', label: 'Unlocked', meta_key: '_lpm_unlocked' ),
-			),
-		);
+		$repo  = new OrderMetaRepository();
 		$store = new OrderFieldStore();
-		$store->register_meta_box( $box );
+		$store->register(
+			$this->group_with( new SettingsField( id: 'unlocked', type: 'checkbox', label: 'Unlocked', meta_key: '_lpm_unlocked' ) ),
+			$this->placement(),
+		);
 
-		$_POST = array( self::NONCE_NAME => $this->nonce(), self::BOX_ID => array( 'unlocked' => '1' ) );
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'unlocked' => '1' ) );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
-		// Persisted under the field's meta_key, not its id.
-		self::assertTrue( $store->has( $this->order_id, '_lpm_unlocked' ) );
-		self::assertFalse( $store->has( $this->order_id, 'unlocked' ) );
+		self::assertTrue( $repo->has( $this->order_id, '_lpm_unlocked' ) );
+		self::assertFalse( $repo->has( $this->order_id, 'unlocked' ) );
 	}
 
-	public function test_save_is_skipped_for_a_user_without_the_orders_capability(): void {
+	public function test_save_is_skipped_for_a_user_without_the_order_capability(): void {
 		$subscriber = \wp_insert_user(
 			array( 'user_login' => 'dws_sub_' . $this->order_id, 'user_pass' => 'x', 'role' => 'subscriber' ),
 		);
 		\assert( \is_int( $subscriber ) );
 		\wp_set_current_user( $subscriber );
 
+		$repo  = new OrderMetaRepository();
 		$store = new OrderFieldStore();
-		$store->register_meta_box( $this->box() );
+		$store->register( $this->group(), $this->placement() );
 
-		// A valid nonce for this user, but the user lacks edit_shop_orders: the save must be refused.
-		$_POST = array( self::NONCE_NAME => $this->nonce(), self::BOX_ID => array( 'unlocked' => '1' ) );
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'unlocked' => '1' ) );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
-		self::assertFalse( $store->has( $this->order_id, 'unlocked' ) );
+		self::assertFalse( $repo->has( $this->order_id, 'unlocked' ) );
+
+		\wp_delete_user( $subscriber );
+	}
+
+	public function test_a_configured_box_capability_overrides_the_default(): void {
+		$repo      = new OrderMetaRepository();
+		$placement = new MetaBoxPlacement( screen: 'shop_order', context: 'side', priority: 'default', capability: 'dws_nonexistent_cap' );
+		$store     = new OrderFieldStore();
+		$store->register( $this->group(), $placement );
+
+		// The administrator passes the default order-edit gate but lacks the configured capability, so the save is refused.
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'unlocked' => '1' ) );
+		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
+
+		self::assertFalse( $repo->has( $this->order_id, 'unlocked' ) );
+	}
+
+	public function test_the_box_is_not_added_for_a_user_who_cannot_edit_the_order(): void {
+		$screen = $this->order_screen();
+		\set_current_screen( $screen );
+
+		$subscriber = \wp_insert_user(
+			array( 'user_login' => 'dws_sub_render_' . $this->order_id, 'user_pass' => 'x', 'role' => 'subscriber' ),
+		);
+		\assert( \is_int( $subscriber ) );
+		\wp_set_current_user( $subscriber );
+
+		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
+
+		self::assertArrayNotHasKey( self::GROUP_ID, $this->boxes_on( $screen ) );
 
 		\wp_delete_user( $subscriber );
 	}
 
 	public function test_a_multi_field_save_persists_the_order_once(): void {
-		$box = new ObjectMetaBox(
-			id: self::BOX_ID,
-			title: 'Multi',
-			screen: 'shop_order',
-			context: 'side',
-			priority: 'default',
-			fields_provider: static fn ( int $object_id ): array => array(
-				new SettingsField( id: 'first', type: 'text', label: 'First' ),
-				new SettingsField( id: 'second', type: 'text', label: 'Second' ),
-			),
-		);
+		$repo  = new OrderMetaRepository();
 		$store = new OrderFieldStore();
-		$store->register_meta_box( $box );
+		$store->register(
+			new FieldGroup(
+				id: self::GROUP_ID,
+				title: 'Multi',
+				fields_provider: static fn ( int $object_id ): array => array(
+					new SettingsField( id: 'first', type: 'text', label: 'First' ),
+					new SettingsField( id: 'second', type: 'text', label: 'Second' ),
+				),
+			),
+			$this->placement(),
+		);
 
 		$saves = 0;
 		\add_action(
@@ -405,21 +291,17 @@ final class OrderFieldStoreTest extends TestCase {
 			},
 		);
 
-		$_POST = array(
-			self::NONCE_NAME => $this->nonce(),
-			self::BOX_ID     => array( 'first' => 'A', 'second' => 'B' ),
-		);
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'first' => 'A', 'second' => 'B' ) );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
-		self::assertSame( 'A', $store->get( $this->order_id, 'first' ) );
-		self::assertSame( 'B', $store->get( $this->order_id, 'second' ) );
-		// Both fields persist in a single order write, not one per field.
+		self::assertSame( 'A', $repo->get( $this->order_id, 'first' ) );
+		self::assertSame( 'B', $repo->get( $this->order_id, 'second' ) );
 		self::assertSame( 1, $saves );
 	}
 
 	public function test_a_no_op_save_does_not_persist_the_order(): void {
 		$store = new OrderFieldStore();
-		$store->register_meta_box( $this->box() );
+		$store->register( $this->group(), $this->placement() );
 
 		$saves = 0;
 		\add_action(
@@ -436,65 +318,53 @@ final class OrderFieldStoreTest extends TestCase {
 		self::assertSame( 0, $saves );
 	}
 
-	public function test_a_duplicate_field_id_in_a_box_is_rejected(): void {
-		$box = new ObjectMetaBox(
-			id: self::BOX_ID,
-			title: 'Dup',
-			screen: 'shop_order',
-			context: 'side',
-			priority: 'default',
-			fields_provider: static fn ( int $object_id ): array => array(
-				new SettingsField( id: 'flag', type: 'checkbox', label: 'A' ),
-				new SettingsField( id: 'flag', type: 'checkbox', label: 'B' ),
-			),
-		);
+	public function test_a_duplicate_field_id_in_a_group_is_rejected(): void {
 		$store = new OrderFieldStore();
-		$store->register_meta_box( $box );
+		$store->register(
+			new FieldGroup(
+				id: self::GROUP_ID,
+				title: 'Dup',
+				fields_provider: static fn ( int $object_id ): array => array(
+					new SettingsField( id: 'flag', type: 'checkbox', label: 'A' ),
+					new SettingsField( id: 'flag', type: 'checkbox', label: 'B' ),
+				),
+			),
+			$this->placement(),
+		);
 
-		$_POST = array( self::NONCE_NAME => $this->nonce(), self::BOX_ID => array( 'flag' => '1' ) );
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'flag' => '1' ) );
 
 		$this->expectException( DuplicateSettingsFieldException::class );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 	}
 
-	public function test_register_meta_box_rejects_a_non_order_screen(): void {
-		$box = new ObjectMetaBox(
-			id: self::BOX_ID,
-			title: 'Box',
-			screen: 'post',
-			context: 'side',
-			priority: 'default',
-			fields_provider: static fn ( int $object_id ): array => array(),
-		);
+	public function test_register_rejects_a_non_order_screen(): void {
+		$placement = new MetaBoxPlacement( screen: 'post', context: 'side', priority: 'default' );
 
-		$this->expectException( InvalidObjectMetaBoxException::class );
+		$this->expectException( UnsupportedOrderScreenException::class );
 
-		( new OrderFieldStore() )->register_meta_box( $box );
+		( new OrderFieldStore() )->register( $this->group(), $placement );
 	}
 
-	public function test_a_meta_box_title_is_escaped_before_registration(): void {
-		$screen = OrderUtil::custom_orders_table_usage_is_enabled() ? 'woocommerce_page_wc-orders' : 'shop_order';
+	public function test_a_group_title_is_escaped_before_registration(): void {
+		$screen = $this->order_screen();
 		\set_current_screen( $screen );
 
-		$box = new ObjectMetaBox(
-			id: self::BOX_ID,
+		$group = new FieldGroup(
+			id: self::GROUP_ID,
 			title: '<script>alert(1)</script>',
-			screen: 'shop_order',
-			context: 'side',
-			priority: 'default',
 			fields_provider: static fn ( int $object_id ): array => array(),
 		);
-		( new OrderFieldStore() )->register_meta_box( $box );
-		\do_action( "add_meta_boxes_$screen" );
+		( new OrderFieldStore() )->register( $group, $this->placement() );
+		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
-		// WordPress echoes the stored title raw in do_meta_boxes(), so the store hands it pre-escaped.
-		$title = (string) ( ( (array) ( $this->boxes_on( $screen )[ self::BOX_ID ] ?? array() ) )['title'] ?? '' );
+		$title = (string) ( ( (array) ( $this->boxes_on( $screen )[ self::GROUP_ID ] ?? array() ) )['title'] ?? '' );
 		self::assertStringNotContainsString( '<script>', $title );
 		self::assertStringContainsString( '&lt;script&gt;', $title );
 	}
 
 	public function test_a_custom_field_type_renders_and_saves_through_the_order_surface(): void {
-		$screen = OrderUtil::custom_orders_table_usage_is_enabled() ? 'woocommerce_page_wc-orders' : 'shop_order';
+		$screen = $this->order_screen();
 		\set_current_screen( $screen );
 
 		$custom_types = array(
@@ -507,54 +377,91 @@ final class OrderFieldStoreTest extends TestCase {
 				),
 			),
 		);
-		$box   = new ObjectMetaBox(
-			id: self::BOX_ID,
-			title: 'Home',
-			screen: 'shop_order',
-			context: 'side',
-			priority: 'default',
-			fields_provider: static fn ( int $object_id ): array => array(
-				new SettingsField( id: 'home_page', type: 'single_select_page', label: 'Home Page' ),
-			),
-		);
+		$group = $this->group_with( new SettingsField( id: 'home_page', type: 'single_select_page', label: 'Home Page' ) );
+		$repo  = new OrderMetaRepository();
 		$store = new OrderFieldStore(
 			renderer: new FieldRenderer( custom_types: $custom_types ),
 			processor: new FieldProcessor( custom_types: $custom_types ),
 		);
-		$store->register_meta_box( $box );
+		$store->register( $group, $this->placement() );
 
-		// The injected renderer's custom control reaches the rendered box.
-		\do_action( "add_meta_boxes_$screen" );
-		$definition = (array) ( $this->boxes_on( $screen )[ self::BOX_ID ] ?? array() );
-		$callback   = $definition['callback'] ?? null;
-		\assert( \is_callable( $callback ) );
-		\ob_start();
-		$callback( \wc_get_order( $this->order_id ) );
-		$html = (string) \ob_get_clean();
+		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
+		$html = $this->render_box( $screen );
 		self::assertStringContainsString( 'class="dws-page-select"', $html );
 		self::assertStringContainsString( 'name="dws_unlock[home_page]"', $html );
 
-		// The injected processor accepts the custom type's submission, which the store persists as order meta.
-		$_POST = array( self::NONCE_NAME => $this->nonce(), self::BOX_ID => array( 'home_page' => '42' ) );
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'home_page' => '42' ) );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
-		self::assertSame( '42', $store->get( $this->order_id, 'home_page' ) );
+		self::assertSame( '42', $repo->get( $this->order_id, 'home_page' ) );
+	}
+
+	public function test_clearing_a_field_with_a_default_revokes_it_without_restoring_the_default(): void {
+		$screen = $this->order_screen();
+		\set_current_screen( $screen );
+
+		$repo  = new OrderMetaRepository();
+		$store = new OrderFieldStore();
+		$store->register(
+			$this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note', default_value: 'preset' ) ),
+			$this->placement(),
+		);
+
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'note' => 'typed' ) );
+		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
+		self::assertSame( 'typed', $repo->get( $this->order_id, 'note' ) );
+
+		$_POST = array( self::NONCE_NAME => $this->nonce(), self::GROUP_ID => array( 'note' => '' ) );
+		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
+		self::assertFalse( $repo->has( $this->order_id, 'note' ) );
+
+		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
+		$html = $this->render_box( $screen );
+		self::assertStringNotContainsString( 'preset', $html );
+	}
+
+	private function order_screen(): string {
+		return OrderUtil::custom_orders_table_usage_is_enabled() ? 'woocommerce_page_wc-orders' : 'shop_order';
+	}
+
+	private function render_box( string $screen ): string {
+		$definition = (array) ( $this->boxes_on( $screen )[ self::GROUP_ID ] ?? array() );
+		$callback   = $definition['callback'] ?? null;
+		\assert( \is_callable( $callback ) );
+
+		\ob_start();
+		$callback( \wc_get_order( $this->order_id ) );
+
+		return (string) \ob_get_clean();
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function boxes_on( string $screen ): array {
+		global $wp_meta_boxes;
+		$by_priority = (array) ( ( (array) ( ( (array) $wp_meta_boxes )[ $screen ] ?? array() ) )['side'] ?? array() );
+
+		return (array) ( $by_priority['default'] ?? array() );
+	}
+
+	private function group(): FieldGroup {
+		return $this->group_with( new SettingsField( id: 'unlocked', type: 'checkbox', label: 'Unlocked' ) );
+	}
+
+	private function group_with( SettingsField $field ): FieldGroup {
+		return new FieldGroup(
+			id: self::GROUP_ID,
+			title: 'Unlock',
+			fields_provider: static fn ( int $object_id ): array => array( $field ),
+		);
+	}
+
+	private function placement(): MetaBoxPlacement {
+		return new MetaBoxPlacement( screen: 'shop_order', context: 'side', priority: 'default' );
 	}
 
 	private function nonce(): string {
 		return \wp_create_nonce( self::NONCE_ACTION . '_' . $this->order_id );
-	}
-
-	private function box(): ObjectMetaBox {
-		return new ObjectMetaBox(
-			id: self::BOX_ID,
-			title: 'Unlock',
-			screen: 'shop_order',
-			context: 'side',
-			priority: 'default',
-			fields_provider: static fn ( int $object_id ): array => array(
-				new SettingsField( id: 'unlocked', type: 'checkbox', label: 'Unlocked' ),
-			),
-		);
 	}
 }
