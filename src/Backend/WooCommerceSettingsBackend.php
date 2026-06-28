@@ -68,7 +68,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 
 	// endregion
 
-	// region METHODS
+	// region INHERITED METHODS
 
 	/**
 	 * {@inheritDoc}
