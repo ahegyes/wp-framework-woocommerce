@@ -3,8 +3,8 @@
 namespace DeepWebSolutions\Framework\WooCommerce\ProductData;
 
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\UnknownFieldTypeException;
-use DeepWebSolutions\Framework\Settings\Schema\FieldType;
-use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
+use DeepWebSolutions\Framework\Settings\Schema\Field\FieldType;
+use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 
 use function DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes;

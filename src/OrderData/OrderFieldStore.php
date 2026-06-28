@@ -7,8 +7,8 @@ use DeepWebSolutions\Framework\Settings\MetaField\ObjectFieldForm;
 use DeepWebSolutions\Framework\Settings\MetaField\ValueObjects\FieldGroup;
 use DeepWebSolutions\Framework\Settings\MetaField\ValueObjects\MetaBoxPlacement;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
-use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
-use DeepWebSolutions\Framework\Settings\Schema\FieldRenderer;
+use DeepWebSolutions\Framework\Settings\Schema\Field\FieldProcessor;
+use DeepWebSolutions\Framework\Settings\Schema\Field\FieldRenderer;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\Exceptions\UnsupportedOrderScreenException;
 
 /**

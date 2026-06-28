@@ -3,7 +3,7 @@
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration;
 
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\UnknownFieldTypeException;
-use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
+use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldRenderer;
 use PHPUnit\Framework\Attributes\CoversClass;

@@ -2,8 +2,8 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Backend;
 
-use DeepWebSolutions\Framework\Settings\Schema\FieldType;
-use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
+use DeepWebSolutions\Framework\Settings\Schema\Field\FieldType;
+use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 
