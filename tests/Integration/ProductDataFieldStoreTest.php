@@ -6,7 +6,7 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsField
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
-use DeepWebSolutions\Framework\WooCommerce\Exceptions\InvalidProductDataTabException;
+use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldStore;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataTab;
 use PHPUnit\Framework\TestCase;

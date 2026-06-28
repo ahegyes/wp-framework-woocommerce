@@ -9,7 +9,7 @@ use DeepWebSolutions\Framework\Settings\MetaField\ValueObjects\MetaBoxPlacement;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\FieldRenderer;
-use DeepWebSolutions\Framework\WooCommerce\Exceptions\UnsupportedOrderScreenException;
+use DeepWebSolutions\Framework\WooCommerce\OrderData\Exceptions\UnsupportedOrderScreenException;
 
 /**
  * Registers a field group as a WooCommerce-order meta box.

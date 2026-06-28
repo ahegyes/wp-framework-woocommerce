@@ -7,7 +7,7 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldEx
 use DeepWebSolutions\Framework\Settings\Schema\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
-use DeepWebSolutions\Framework\WooCommerce\Exceptions\InvalidProductDataTabException;
+use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
 
 use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
 use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;

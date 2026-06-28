@@ -4,7 +4,7 @@ namespace DeepWebSolutions\Framework\WooCommerce\Backend;
 
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
-use DeepWebSolutions\Framework\WooCommerce\Exceptions\UnboundSettingsPageException;
+use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnboundSettingsPageException;
 
 use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
 

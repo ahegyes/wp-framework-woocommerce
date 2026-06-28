@@ -1,6 +1,6 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce\Exceptions;
+namespace DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions;
 
 use DeepWebSolutions\Framework\Shared\Exception\AbstractRuntimeException;
 

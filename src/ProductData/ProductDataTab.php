@@ -3,7 +3,7 @@
 namespace DeepWebSolutions\Framework\WooCommerce\ProductData;
 
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
-use DeepWebSolutions\Framework\WooCommerce\Exceptions\InvalidProductDataTabException;
+use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
 
 use function DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier;
 

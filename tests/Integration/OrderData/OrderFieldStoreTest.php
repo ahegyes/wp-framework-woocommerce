@@ -13,7 +13,7 @@ use DeepWebSolutions\Framework\Settings\Schema\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\CustomFieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
-use DeepWebSolutions\Framework\WooCommerce\Exceptions\UnsupportedOrderScreenException;
+use DeepWebSolutions\Framework\WooCommerce\OrderData\Exceptions\UnsupportedOrderScreenException;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderFieldStore;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderMetaRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
