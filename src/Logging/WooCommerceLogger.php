@@ -80,6 +80,7 @@ final class WooCommerceLogger implements LoggerInterface {
 	#[\Override]
 	public function log( $level, string|\Stringable $message, array $context = array() ): void {
 		if ( ! \is_string( $level ) || ! isset( self::LEVELS[ $level ] ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
 			throw new InvalidArgumentException( 'Unknown log level: ' . ( \is_scalar( $level ) ? (string) $level : \gettype( $level ) ) );
 		}
 
