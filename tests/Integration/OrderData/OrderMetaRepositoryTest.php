@@ -95,6 +95,35 @@ final class OrderMetaRepositoryTest extends TestCase {
 		self::assertFalse( $repo->delete( $this->order_id, '_dws_flag' ) );
 	}
 
+	public function test_a_present_empty_value_is_not_treated_as_absent_on_an_order(): void {
+		$repo = new OrderMetaRepository();
+
+		// CRUD keys off meta_exists(), not value truthiness: a stored falsy value is still present, and get()
+		// returns it rather than the default. WC drops null-valued meta as deleted, so the empty string — not
+		// null — is the order path's falsy-but-present probe.
+		$repo->set( $this->order_id, '_dws_empty', '' );
+
+		self::assertTrue( $repo->has( $this->order_id, '_dws_empty' ) );
+		self::assertSame( '', $repo->get( $this->order_id, '_dws_empty', 'default' ) );
+		self::assertNotSame( 'default', $repo->get( $this->order_id, '_dws_empty', 'default' ) );
+	}
+
+	public function test_a_present_empty_value_is_not_treated_as_absent_via_post_meta(): void {
+		$post_id = \wp_insert_post( array( 'post_title' => 'Probe', 'post_status' => 'publish' ) );
+		\assert( \is_int( $post_id ) );
+		self::assertFalse( \wc_get_order( $post_id ) );
+		$repo = new OrderMetaRepository();
+
+		// The post-meta fallback keys off metadata_exists() for the same reason: a stored '' is present.
+		$repo->set( $post_id, '_dws_empty', '' );
+
+		self::assertTrue( $repo->has( $post_id, '_dws_empty' ) );
+		self::assertSame( '', $repo->get( $post_id, '_dws_empty', 'default' ) );
+		self::assertNotSame( 'default', $repo->get( $post_id, '_dws_empty', 'default' ) );
+
+		\wp_delete_post( $post_id, true );
+	}
+
 	public function test_crud_falls_back_to_post_meta_for_a_non_order_id(): void {
 		$post_id = \wp_insert_post( array( 'post_title' => 'Probe', 'post_status' => 'publish' ) );
 		\assert( \is_int( $post_id ) );
@@ -162,6 +191,15 @@ final class OrderMetaRepositoryTest extends TestCase {
 		self::assertFalse( $repo->has( $this->order_id, 'old' ) );
 		// The whole batch persists in a single order write.
 		self::assertSame( 1, $saves );
+	}
+
+	public function test_apply_deletes_a_key_present_in_both_sets_and_deletes(): void {
+		$repo = new OrderMetaRepository();
+
+		// apply() runs writes before deletes, so a key passed in both arrays ends up deleted, not written.
+		$repo->apply( $this->order_id, array( 'both' => 'written' ), array( 'both' ) );
+
+		self::assertFalse( $repo->has( $this->order_id, 'both' ) );
 	}
 
 	public function test_apply_does_not_save_on_a_no_op_batch(): void {

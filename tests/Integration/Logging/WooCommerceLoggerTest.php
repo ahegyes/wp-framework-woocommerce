@@ -9,6 +9,17 @@ use Psr\Log\InvalidArgumentException;
 
 #[CoversClass( WooCommerceLogger::class )]
 final class WooCommerceLoggerTest extends TestCase {
+	private ?\Closure $logging_class_filter = null;
+
+	protected function tearDown(): void {
+		if ( null !== $this->logging_class_filter ) {
+			\remove_filter( 'woocommerce_logging_class', $this->logging_class_filter );
+			$this->logging_class_filter = null;
+		}
+
+		parent::tearDown();
+	}
+
 	public function test_forwards_a_record_to_the_backing_logger_at_the_matching_level(): void {
 		$backing = new RecordingWCLogger();
 		$logger  = new WooCommerceLogger( 'plugin/framework', $backing );
@@ -40,10 +51,20 @@ final class WooCommerceLoggerTest extends TestCase {
 	}
 
 	public function test_resolves_the_woocommerce_logger_when_none_is_supplied(): void {
-		// The lazy default resolves wc_get_logger() and logs without error.
+		// wc_get_logger() honors woocommerce_logging_class, so swapping in the recorder lets us observe
+		// the lazy default actually dispatching through it. A plain new WC_Logger() ignores this filter,
+		// so the recorder would stay empty — that is the mutant this asserts against.
+		$this->logging_class_filter = static fn(): string => RecordingWCLogger::class;
+		\add_filter( 'woocommerce_logging_class', $this->logging_class_filter );
+
 		( new WooCommerceLogger( 'plugin/framework' ) )->error( 'boot failure' );
 
-		$this->expectNotToPerformAssertions();
+		$resolved = \wc_get_logger();
+		self::assertInstanceOf( RecordingWCLogger::class, $resolved );
+		self::assertCount( 1, $resolved->records );
+		self::assertSame( 'error', $resolved->records[0]['level'] );
+		self::assertSame( 'boot failure', $resolved->records[0]['message'] );
+		self::assertSame( 'plugin/framework', $resolved->records[0]['context']['source'] );
 	}
 
 	public function test_an_unknown_level_is_rejected(): void {

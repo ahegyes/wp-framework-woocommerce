@@ -52,6 +52,15 @@ final class ProductDataFieldRendererTest extends TestCase {
 		self::assertStringContainsString( 'form-field', $html );
 	}
 
+	public function test_strips_event_handler_attributes_but_keeps_plain_attributes(): void {
+		$field = new SettingsField( id: 'store', type: 'text', label: 'Store', attributes: array( 'onclick' => 'evil()', 'data-x' => 'ok' ) );
+
+		$html = $this->render( $field, 'Acme', '_p_general_store' );
+
+		self::assertStringNotContainsString( 'onclick', $html );
+		self::assertStringContainsString( 'data-x="ok"', $html );
+	}
+
 	public function test_renders_a_checked_checkbox_for_a_truthy_value(): void {
 		$html = $this->render( new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag' ), true, '_p_flag' );
 

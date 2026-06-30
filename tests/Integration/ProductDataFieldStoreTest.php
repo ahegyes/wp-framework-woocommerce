@@ -233,12 +233,14 @@ final class ProductDataFieldStoreTest extends TestCase {
 				new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', validate: static fn ( mixed $v ): bool => 'yes' !== $v ),
 			),
 		);
-		$store->set( $this->product_id, 'general', 'flag', true );
+		// Prior value differs from the rejected submission so accept-and-store would land 'yes', not the
+		// preserved 'no' — the assertion fails unless the rejection-preserve branch actually fires.
+		$store->set( $this->product_id, 'general', 'flag', false );
 
 		$_POST = array( '_dws-wrwc_general_flag' => 'yes' );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertSame( 'yes', $store->get( $this->product_id, 'general', 'flag' ) );
+		self::assertSame( 'no', $store->get( $this->product_id, 'general', 'flag' ) );
 	}
 
 	public function test_save_runs_sanitize_and_validate_on_a_custom_field(): void {
@@ -548,6 +550,7 @@ final class ProductDataFieldStoreTest extends TestCase {
 		$store->register_tab( $this->tab() );
 
 		self::assertFalse( $store->has( $this->product_id, 'general', 'code' ) );
+		self::assertFalse( $store->delete( $this->product_id, 'general', 'code' ) );
 
 		$store->set( $this->product_id, 'general', 'code', 'X1' );
 		self::assertTrue( $store->has( $this->product_id, 'general', 'code' ) );

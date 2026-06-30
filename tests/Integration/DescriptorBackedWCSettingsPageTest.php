@@ -22,6 +22,15 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 		}
 	}
 
+	protected function tearDown(): void {
+		// The static descriptor map persists across the process; clear it so a class bound in one test
+		// cannot leak into another (e.g. silently satisfying the unbound-instantiation guard test).
+		$descriptors = new \ReflectionProperty( DescriptorBackedWCSettingsPage::class, 'descriptors' );
+		$descriptors->setValue( null, array() );
+
+		parent::tearDown();
+	}
+
 	public function test_recovers_its_descriptor_id_and_label_from_the_static_map(): void {
 		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
 
@@ -61,6 +70,28 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 		self::assertContains( 'dws-foo_enabled', $ids );
 	}
 
+	public function test_maps_the_first_section_to_the_default_and_later_sections_to_their_slug(): void {
+		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->multi_section_page() );
+
+		// get_sections() (public) returns the filtered get_own_sections() map.
+		$sections = ( new FooWCSettingsPage() )->get_sections();
+
+		self::assertSame( 'General', $sections[''] ?? null );
+		self::assertSame( 'Advanced', $sections['advanced'] ?? null );
+		self::assertArrayNotHasKey( 'general', $sections );
+	}
+
+	public function test_routes_a_later_section_to_its_own_fields(): void {
+		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->multi_section_page() );
+
+		$settings = ( new FooWCSettingsPage() )->get_settings_for_section( 'advanced' );
+		$ids      = \array_column( $settings, 'id' );
+
+		self::assertContains( 'dws-foo_advanced', $ids );
+		self::assertContains( 'dws-foo_mode', $ids );
+		self::assertNotContains( 'dws-foo_enabled', $ids );
+	}
+
 	public function test_two_distinct_subclasses_recover_their_own_descriptors(): void {
 		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
 		DescriptorBackedWCSettingsPage::bind( BarWCSettingsPage::class, $this->page( 'dws-bar', 'dws_bar', 'Bar' ) );
@@ -98,6 +129,28 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 					'general',
 					'General',
 					array( new SettingsField( id: 'enabled', type: 'checkbox', label: 'Enabled' ) ),
+				),
+			),
+		);
+	}
+
+	private function multi_section_page(): SettingsPage {
+		return new SettingsPage(
+			slug: 'dws-foo',
+			page_title: 'Foo Settings',
+			menu_title: 'Foo',
+			capability: 'manage_woocommerce',
+			location: 'dws_foo',
+			sections: array(
+				new SettingsSection(
+					'general',
+					'General',
+					array( new SettingsField( id: 'enabled', type: 'checkbox', label: 'Enabled' ) ),
+				),
+				new SettingsSection(
+					'advanced',
+					'Advanced',
+					array( new SettingsField( id: 'mode', type: 'text', label: 'Mode' ) ),
 				),
 			),
 		);
