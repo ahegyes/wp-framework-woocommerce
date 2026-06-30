@@ -6,6 +6,7 @@ use DeepWebSolutions\Framework\Settings\Schema\Field\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 
 use function DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes;
 use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
@@ -57,23 +58,43 @@ final class WCSettingsBuilder {
 		$settings = array();
 
 		foreach ( $page->sections as $section ) {
-			$anchor = $page->slug . '_' . $section->id;
+			foreach ( $this->build_section( $page, $section ) as $setting ) {
+				$settings[] = $setting;
+			}
+		}
 
-			$settings[] = array(
+		return $settings;
+	}
+
+	/**
+	 * Builds the WooCommerce settings array for one page section.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   SettingsPage    $page    Page descriptor owning the section.
+	 * @param   SettingsSection $section Section descriptor to translate.
+	 *
+	 * @return  list<array<string, mixed>>
+	 */
+	public function build_section( SettingsPage $page, SettingsSection $section ): array {
+		$anchor   = $page->slug . '_' . $section->id;
+		$settings = array(
+			array(
 				'type'  => 'title',
 				'id'    => $anchor,
 				'title' => $section->title,
-			);
+			),
+		);
 
-			foreach ( $section->fields as $field ) {
-				$settings[] = $this->build_field( $page->slug, $field );
-			}
-
-			$settings[] = array(
-				'type' => 'sectionend',
-				'id'   => $anchor,
-			);
+		foreach ( $section->fields as $field ) {
+			$settings[] = $this->build_field( $page->slug, $field );
 		}
+
+		$settings[] = array(
+			'type' => 'sectionend',
+			'id'   => $anchor,
+		);
 
 		return $settings;
 	}

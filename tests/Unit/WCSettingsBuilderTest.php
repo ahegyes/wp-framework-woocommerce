@@ -51,6 +51,25 @@ final class WCSettingsBuilderTest extends TestCase {
 		self::assertSame( 'Advanced', $built[4]['title'] );
 	}
 
+	public function test_build_section_emits_only_that_sections_title_fields_and_sectionend(): void {
+		$page  = $this->page();
+		$built = ( new WCSettingsBuilder() )->build_section( $page, $page->sections[1] );
+
+		$shape = \array_map(
+			static fn ( array $row ): array => array( $row['type'], $row['id'] ?? null ),
+			$built,
+		);
+
+		self::assertSame(
+			array(
+				array( 'title', 'dws-shop_advanced' ),
+				array( 'checkbox', 'dws-shop_debug' ),
+				array( 'sectionend', 'dws-shop_advanced' ),
+			),
+			$shape,
+		);
+	}
+
 	public function test_a_field_row_carries_type_label_and_default(): void {
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
 

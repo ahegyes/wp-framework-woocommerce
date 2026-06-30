@@ -62,8 +62,8 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * The framework places every section on WooCommerce's default section as a title/sectionend group,
-	 * so only the default section carries fields.
+	 * WooCommerce treats the empty section id as the page's default section; the descriptor's first
+	 * editable section maps there, and each later section maps to its native WooCommerce section id.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -74,11 +74,35 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	 */
 	#[\Override]
 	protected function get_settings_for_section_core( $section_id ): array {
-		if ( '' !== $section_id ) {
+		$page    = $this->editable_page();
+		$section = $this->section_for_woocommerce_section( $page, (string) $section_id );
+
+		if ( null === $section ) {
 			return array();
 		}
 
-		return ( new WCSettingsBuilder() )->build( $this->editable_page() );
+		return ( new WCSettingsBuilder() )->build_section( $page, $section );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * WooCommerce requires one default section keyed by an empty string; use the descriptor's first
+	 * editable section for that default and expose the rest as sub-tabs keyed by descriptor section id.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @return  array<string, string>
+	 */
+	#[\Override]
+	protected function get_own_sections(): array {
+		$sections = array();
+		foreach ( $this->editable_page()->sections as $index => $section ) {
+			$sections[ 0 === $index ? '' : $section->id ] = $section->title;
+		}
+
+		return $sections;
 	}
 
 	// endregion
@@ -154,6 +178,27 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 			location: $descriptor->location,
 			sections: $sections,
 		);
+	}
+
+	/**
+	 * Resolves WooCommerce's native section id back to the descriptor section it represents.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   SettingsPage $page       Editable page descriptor.
+	 * @param   string       $section_id WooCommerce section id.
+	 *
+	 * @return  SettingsSection|null
+	 */
+	protected function section_for_woocommerce_section( SettingsPage $page, string $section_id ): ?SettingsSection {
+		foreach ( $page->sections as $index => $section ) {
+			if ( ( 0 === $index && '' === $section_id ) || $section->id === $section_id ) {
+				return $section;
+			}
+		}
+
+		return null;
 	}
 
 	// endregion
