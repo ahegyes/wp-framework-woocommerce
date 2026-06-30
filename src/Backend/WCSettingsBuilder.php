@@ -104,6 +104,9 @@ final class WCSettingsBuilder {
 		if ( null !== $field->default_value ) {
 			$entry['default'] = $this->map_default( $field );
 		}
+		if ( null !== $field->description ) {
+			$entry['desc'] = $field->description;
+		}
 
 		// A choice field always carries an options array: WooCommerce iterates it unconditionally when rendering.
 		if ( $this->expects_options( $field->type ) ) {

@@ -171,6 +171,20 @@ final class ProductDataFieldStoreTest extends TestCase {
 		self::assertSame( 'ABC', $store->get( $this->product_id, 'general', 'code' ) );
 	}
 
+	public function test_save_applies_the_builtin_default_sanitizer(): void {
+		$store = new ProductDataFieldStore();
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField( id: 'code', type: 'text', label: 'Code' ),
+			),
+		);
+
+		$_POST = array( '_dws-wrwc_general_code' => '<script>x</script>' );
+		\do_action( 'woocommerce_process_product_meta', $this->product_id );
+
+		self::assertSame( 'x', $store->get( $this->product_id, 'general', 'code' ) );
+	}
+
 	public function test_save_is_skipped_for_an_unsupported_product(): void {
 		$store = new ProductDataFieldStore();
 		$store->register_tab( $this->tab( supports: static fn ( int $product_id ): bool => false ) );
@@ -279,6 +293,32 @@ final class ProductDataFieldStoreTest extends TestCase {
 		$_POST = array();
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
+		self::assertSame( 'sanitized:', $store->get( $this->product_id, 'general', 'span' ) );
+	}
+
+	public function test_a_non_scalar_custom_field_submission_is_coerced_before_sanitize(): void {
+		$seen  = null;
+		$store = new ProductDataFieldStore();
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField(
+					id: 'span',
+					type: 'dws_custom',
+					label: 'Span',
+					default_value: 'fallback',
+					sanitize: static function ( mixed $value ) use ( &$seen ): string {
+						$seen = $value;
+						return 'sanitized:' . (string) $value;
+					},
+				),
+				array( 'dws_custom' => $this->noop_renderer() ),
+			),
+		);
+
+		$_POST = array( '_dws-wrwc_general_span' => array( 'tampered' ) );
+		\do_action( 'woocommerce_process_product_meta', $this->product_id );
+
+		self::assertSame( '', $seen );
 		self::assertSame( 'sanitized:', $store->get( $this->product_id, 'general', 'span' ) );
 	}
 
@@ -414,6 +454,25 @@ final class ProductDataFieldStoreTest extends TestCase {
 		);
 
 		$_POST = array( '_dws-wrwc_general_secret' => 'tampered' );
+		\do_action( 'woocommerce_process_product_meta', $this->product_id );
+
+		self::assertFalse( \metadata_exists( 'post', $this->product_id, '_dws-wrwc_general_secret' ) );
+	}
+
+	public function test_save_does_not_freeze_an_injected_default_for_a_field_the_user_cannot_edit(): void {
+		$store = new ProductDataFieldStore();
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField( id: 'secret', type: 'text', label: 'Secret', default_value: 'fallback', capability: 'dws_protected_cap' ),
+			),
+		);
+
+		\clean_post_cache( $this->product_id );
+		$product = \wc_get_product( $this->product_id );
+		\assert( $product instanceof \WC_Product );
+		self::assertSame( 'fallback', $product->get_meta( '_dws-wrwc_general_secret', true ) );
+
+		$_POST = array();
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
 		self::assertFalse( \metadata_exists( 'post', $this->product_id, '_dws-wrwc_general_secret' ) );

@@ -65,6 +65,16 @@ final class WCSettingsBuilderTest extends TestCase {
 		self::assertArrayNotHasKey( 'default', $row );
 	}
 
+	public function test_a_field_description_is_emitted_as_the_woocommerce_desc(): void {
+		$page = $this->page_with_field(
+			new SettingsField( id: 'tagline', type: 'text', label: 'Tagline', description: 'Shown under the field.' ),
+		);
+
+		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_tagline' );
+
+		self::assertSame( 'Shown under the field.', $row['desc'] );
+	}
+
 	public function test_a_field_row_carries_an_explicit_off_autoload_flag_by_default(): void {
 		// WooCommerce defaults a settings option to autoloaded when the entry omits 'autoload', so the
 		// builder always emits it to keep framework settings out of alloptions unless a field opts in.

@@ -10,6 +10,7 @@ use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
 
 use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
+use function DeepWebSolutions\Framework\Settings\Schema\wordpress_field_type_sanitizers;
 use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
 
 /**
@@ -78,12 +79,14 @@ final class ProductDataFieldStore {
 	 * @version 2.0.0
 	 *
 	 * @param   ProductDataFieldRenderer $renderer  Renderer for taxonomy-typed field controls.
-	 * @param   FieldProcessor           $processor Processor for sanitizing submitted taxonomy-typed values.
+	 * @param   ?FieldProcessor          $processor Processor for sanitizing submitted taxonomy-typed values; null applies one carrying the per-type default sanitizers.
 	 */
 	public function __construct(
 		protected ProductDataFieldRenderer $renderer = new ProductDataFieldRenderer(),
-		protected FieldProcessor $processor = new FieldProcessor(),
-	) {}
+		protected ?FieldProcessor $processor = null,
+	) {
+		$this->processor ??= new FieldProcessor( type_sanitizers: wordpress_field_type_sanitizers() );
+	}
 
 	// endregion
 
@@ -350,6 +353,8 @@ final class ProductDataFieldStore {
 			return;
 		}
 
+		$this->strip_injected_defaults( $product );
+
 		foreach ( $this->tab()->sections as $section ) {
 			foreach ( $section->fields as $field ) {
 				if ( ! is_field_editable_by_current_user( $field ) ) {
@@ -593,6 +598,9 @@ final class ProductDataFieldStore {
 			// cannot freeze the default for a predating product. This is the deliberate inverse of
 			// FieldProcessor::process_custom_or_reject(), which folds a built-in custom rejection to the default.
 			\assert( $field->sanitize instanceof \Closure );
+			if ( null !== $raw && ! \is_scalar( $raw ) ) {
+				$raw = '';
+			}
 			$value = ( $field->sanitize )( $raw ?? '' );
 			if ( null !== $field->validate && ! ( $field->validate )( $value ) ) {
 				return ( $field->sanitize )( '' );
@@ -601,7 +609,21 @@ final class ProductDataFieldStore {
 			return $value;
 		}
 
-		return $this->processor->process( $field, null === $raw ? array() : array( $field->id => $raw ) );
+		return $this->processor()->process( $field, null === $raw ? array() : array( $field->id => $raw ) );
+	}
+
+	/**
+	 * Returns the configured processor.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @return  FieldProcessor
+	 */
+	protected function processor(): FieldProcessor {
+		\assert( $this->processor instanceof FieldProcessor );
+
+		return $this->processor;
 	}
 
 	/**

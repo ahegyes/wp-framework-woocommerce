@@ -8,6 +8,7 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsSecti
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnsupportedSettingsPageCapabilityException;
 
 use function DeepWebSolutions\Framework\Settings\Schema\assert_unique_section_and_field_ids;
 use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
@@ -29,6 +30,16 @@ use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_cur
  */
 final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	// region FIELDS AND CONSTANTS
+
+	/**
+	 * Capability WooCommerce uses for saving settings pages.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @var     string
+	 */
+	protected const SETTINGS_CAPABILITY = 'manage_woocommerce';
 
 	/**
 	 * The registered page; null until register_page() runs.
@@ -78,9 +89,12 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 *
 	 * @throws  DuplicateSettingsSectionException If two sections on the page share an id.
 	 * @throws  DuplicateSettingsFieldException If two fields on the page share an id.
+	 * @throws  UnsupportedSettingsPageCapabilityException If the page capability differs from WooCommerce's settings capability.
 	 */
 	#[\Override]
 	public function register_page( SettingsPage $page ): void {
+		$this->assert_supported_page_capability( $page );
+
 		$this->page   = $page;
 		$this->fields = $this->map_fields( $page );
 
@@ -119,7 +133,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 */
 	#[\Override]
 	public function set( string $field_id, mixed $value ): void {
-		\update_option( $this->option_key( $field_id ), $value );
+		\update_option( $this->option_key( $field_id ), $value, $this->fields[ $field_id ]->autoload );
 	}
 
 	/**
@@ -166,14 +180,42 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	protected function map_fields( SettingsPage $page ): array {
 		assert_unique_section_and_field_ids( $page );
 
-		$map = array();
+		$map         = array();
+		$section_ids = array();
+		foreach ( $page->sections as $section ) {
+			$section_ids[ $section->id ] = true;
+		}
+
 		foreach ( $page->sections as $section ) {
 			foreach ( $section->fields as $field ) {
+				if ( \array_key_exists( $field->id, $section_ids ) ) {
+					// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
+					throw new DuplicateSettingsFieldException( "Settings field id collides with a section id on WooCommerce settings page '$page->slug': '$field->id'" );
+				}
 				$map[ $field->id ] = $field;
 			}
 		}
 
 		return $map;
+	}
+
+	/**
+	 * Rejects a page capability WooCommerce cannot honor on save.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   SettingsPage $page Page to validate.
+	 *
+	 * @throws  UnsupportedSettingsPageCapabilityException If the page capability differs from WooCommerce's settings capability.
+	 */
+	protected function assert_supported_page_capability( SettingsPage $page ): void {
+		if ( self::SETTINGS_CAPABILITY === $page->capability ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
+		throw new UnsupportedSettingsPageCapabilityException( "WooCommerce settings pages must use the 'manage_woocommerce' capability; page '$page->slug' declares '$page->capability'." );
 	}
 
 	/**
