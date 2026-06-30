@@ -173,16 +173,32 @@ final class ProductDataFieldStoreTest extends TestCase {
 
 	public function test_save_applies_the_builtin_default_sanitizer(): void {
 		$store = new ProductDataFieldStore();
+		$raw   = '<b>x</b>';
 		$store->register_tab(
 			$this->tab_with(
 				new SettingsField( id: 'code', type: 'text', label: 'Code' ),
 			),
 		);
 
-		$_POST = array( '_dws-wrwc_general_code' => '<script>x</script>' );
+		$_POST = array( '_dws-wrwc_general_code' => $raw );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertSame( 'x', $store->get( $this->product_id, 'general', 'code' ) );
+		self::assertSame( \sanitize_text_field( $raw ), $store->get( $this->product_id, 'general', 'code' ) );
+	}
+
+	public function test_save_preserves_an_existing_value_when_a_present_submission_is_invalid(): void {
+		$store = new ProductDataFieldStore();
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField( id: 'warranty-type', type: 'select', label: 'Type', options: array( 'global' => 'Global', 'addon' => 'Add-on' ) ),
+			),
+		);
+		$store->set( $this->product_id, 'general', 'warranty-type', 'global' );
+
+		$_POST = array( '_dws-wrwc_general_warranty-type' => 'tampered' );
+		\do_action( 'woocommerce_process_product_meta', $this->product_id );
+
+		self::assertSame( 'global', $store->get( $this->product_id, 'general', 'warranty-type' ) );
 	}
 
 	public function test_save_is_skipped_for_an_unsupported_product(): void {
@@ -209,19 +225,20 @@ final class ProductDataFieldStoreTest extends TestCase {
 		self::assertEqualsCanonicalizing( array( 'cart', 'email' ), $store->get( $this->product_id, 'general', 'locations' ) );
 	}
 
-	public function test_save_runs_the_validator_on_a_checkbox(): void {
+	public function test_save_preserves_a_checkbox_when_validation_rejects_the_submission(): void {
 		$store = new ProductDataFieldStore();
 		$store->register_tab(
 			$this->tab_with(
-				// A validator that rejects 'yes' forces the checked submission back to the off value.
+				// A validator that rejects 'yes' makes the checked submission invalid.
 				new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', validate: static fn ( mixed $v ): bool => 'yes' !== $v ),
 			),
 		);
+		$store->set( $this->product_id, 'general', 'flag', true );
 
 		$_POST = array( '_dws-wrwc_general_flag' => 'yes' );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertSame( 'no', $store->get( $this->product_id, 'general', 'flag' ) );
+		self::assertSame( 'yes', $store->get( $this->product_id, 'general', 'flag' ) );
 	}
 
 	public function test_save_runs_sanitize_and_validate_on_a_custom_field(): void {

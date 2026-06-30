@@ -7,6 +7,9 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldEx
 use DeepWebSolutions\Framework\Settings\Schema\Field\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\Field\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Shared\Result\AbstractResult;
+use DeepWebSolutions\Framework\Shared\Result\Failure;
+use DeepWebSolutions\Framework\Shared\Result\Success;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
 
 use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
@@ -336,8 +339,9 @@ final class ProductDataFieldStore {
 	 * Persists the tab's submitted fields onto a supported product. Hooked to woocommerce_process_product_meta.
 	 *
 	 * WooCommerce verifies the product-edit nonce and the edit_post capability before firing this hook; each
-	 * field is additionally gated on its own capability. Every editable field is written and the product is
-	 * saved once, so a field left at its default holds a real value after the first save.
+	 * field is additionally gated on its own capability. Every valid editable field is written and the product
+	 * is saved once, so a field left at its default holds a real value after the first save; an invalid
+	 * present built-in submission preserves the prior stored value.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -361,7 +365,12 @@ final class ProductDataFieldStore {
 					continue;
 				}
 				$meta_key = $this->meta_key_for( $section->id, $field );
-				$product->update_meta_data( $meta_key, $this->submitted_value( $field, $meta_key ) );
+				$result   = $this->submitted_value( $field, $meta_key );
+				if ( $result instanceof Failure ) {
+					continue;
+				}
+				\assert( $result instanceof Success );
+				$product->update_meta_data( $meta_key, $result->value );
 			}
 		}
 
@@ -567,8 +576,9 @@ final class ProductDataFieldStore {
 	}
 
 	/**
-	 * Turns a field's raw submission into the value to persist: a yes/no checkbox string, the field's own
-	 * sanitizer for a custom type, otherwise the processor's sanitize/validate result.
+	 * Turns a field's raw submission into the value to persist or a rejection. Built-in fields preserve the
+	 * prior value when processing rejects a present submission; custom fields keep their explicit clear-to-empty
+	 * save semantics.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -576,16 +586,16 @@ final class ProductDataFieldStore {
 	 * @param   SettingsField $field    Field being saved.
 	 * @param   string        $meta_key Submission key to read.
 	 *
-	 * @return  mixed
+	 * @return  Success<mixed>|Failure<\DeepWebSolutions\Framework\Settings\Schema\Errors\FieldProcessingError>
 	 */
-	protected function submitted_value( SettingsField $field, string $meta_key ): mixed {
+	protected function submitted_value( SettingsField $field, string $meta_key ): AbstractResult {
 		$type = FieldType::tryFrom( $field->type );
 
 		if ( FieldType::Checkbox === $type ) {
 			// The checkbox submit convention is its value when checked, nothing when unchecked; the descriptor's
-			// sanitize/validate still apply, falling back to the off value when validation rejects.
+			// sanitize/validate still apply, preserving the prior value when validation rejects.
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the product-edit nonce before woocommerce_process_product_meta fires.
-			return $this->sanitize_and_validate( $field, isset( $_POST[ $meta_key ] ) ? 'yes' : 'no', 'no' );
+			return $this->processor()->process_or_reject( $field, array( $field->id => isset( $_POST[ $meta_key ] ) ? 'yes' : 'no' ) );
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified by WooCommerce; see above.
@@ -603,13 +613,13 @@ final class ProductDataFieldStore {
 			}
 			$value = ( $field->sanitize )( $raw ?? '' );
 			if ( null !== $field->validate && ! ( $field->validate )( $value ) ) {
-				return ( $field->sanitize )( '' );
+				return Success::from( ( $field->sanitize )( '' ) );
 			}
 
-			return $value;
+			return Success::from( $value );
 		}
 
-		return $this->processor()->process( $field, null === $raw ? array() : array( $field->id => $raw ) );
+		return $this->processor()->process_or_reject( $field, null === $raw ? array() : array( $field->id => $raw ) );
 	}
 
 	/**
@@ -624,29 +634,6 @@ final class ProductDataFieldStore {
 		\assert( $this->processor instanceof FieldProcessor );
 
 		return $this->processor;
-	}
-
-	/**
-	 * Runs a field's sanitize then validate, returning the fallback when validation rejects the value.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   SettingsField $field    Field whose closures to apply.
-	 * @param   mixed         $value    Value to sanitize and validate.
-	 * @param   mixed         $rejected Value returned when validation rejects.
-	 *
-	 * @return  mixed
-	 */
-	protected function sanitize_and_validate( SettingsField $field, mixed $value, mixed $rejected ): mixed {
-		if ( null !== $field->sanitize ) {
-			$value = ( $field->sanitize )( $value );
-		}
-		if ( null !== $field->validate && ! ( $field->validate )( $value ) ) {
-			return $rejected;
-		}
-
-		return $value;
 	}
 
 	/**

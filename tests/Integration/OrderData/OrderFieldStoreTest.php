@@ -205,12 +205,30 @@ final class OrderFieldStoreTest extends TestCase {
 	public function test_save_applies_the_builtin_default_sanitizer(): void {
 		$repo  = new OrderMetaRepository();
 		$store = new OrderFieldStore();
+		$raw   = '<b>x</b>';
 		$store->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'note' => '<script>x</script>' ) );
+		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'note' => $raw ) );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
-		self::assertSame( 'x', $repo->get( $this->order_id, 'note' ) );
+		self::assertSame( \sanitize_text_field( $raw ), $repo->get( $this->order_id, 'note' ) );
+	}
+
+	public function test_save_preserves_an_existing_value_when_a_present_submission_is_invalid(): void {
+		$repo  = new OrderMetaRepository();
+		$store = new OrderFieldStore();
+		$store->register(
+			$this->group_with(
+				new SettingsField( id: 'status', type: 'select', label: 'Status', options: array( 'locked' => 'Locked' ) ),
+			),
+			$this->placement(),
+		);
+
+		$repo->set( $this->order_id, 'status', 'locked' );
+		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'status' => 'open' ) );
+		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
+
+		self::assertSame( 'locked', $repo->get( $this->order_id, 'status' ) );
 	}
 
 	public function test_save_is_skipped_without_a_valid_nonce(): void {
