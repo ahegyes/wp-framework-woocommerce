@@ -10,8 +10,10 @@ use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnboundSettingsPag
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\BarWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\FooWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\UnboundWCSettingsPage;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+#[CoversClass( DescriptorBackedWCSettingsPage::class )]
 final class DescriptorBackedWCSettingsPageTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();

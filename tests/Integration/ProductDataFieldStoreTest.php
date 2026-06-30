@@ -9,8 +9,10 @@ use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldStore;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataTab;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+#[CoversClass( ProductDataFieldStore::class )]
 final class ProductDataFieldStoreTest extends TestCase {
 	private const ISOLATED_HOOKS = array(
 		'woocommerce_product_data_tabs',

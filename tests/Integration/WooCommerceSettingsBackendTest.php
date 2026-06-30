@@ -14,8 +14,10 @@ use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnboundSettingsPag
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\BarWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\FooWCSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\LazyBindWCSettingsPage;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+#[CoversClass( WooCommerceSettingsBackend::class )]
 final class WooCommerceSettingsBackendTest extends TestCase {
 	private const OPTION_KEYS = array( 'dws-foo_store_name', 'dws-foo_flag', 'dws-foo_extra', 'dws-foo_code', 'dws-foo_a', 'dws-foo_open', 'dws-foo_secret', 'dws-foo_cold', 'dws-foo_hot', 'dws-bar_b' );
 
