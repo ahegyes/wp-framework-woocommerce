@@ -10,6 +10,6 @@ Part of the [DWS WordPress framework](https://github.com/ahegyes/wordpress-frame
 composer require ahegyes/wp-framework-woocommerce
 ```
 
-## Predecessor
+## Lineage
 
 Successor to [`deep-web-solutions/wp-framework-woocommerce`](https://github.com/deep-web-solutions/wordpress-framework-woocommerce) (archived).
