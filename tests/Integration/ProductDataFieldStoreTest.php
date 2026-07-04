@@ -386,6 +386,23 @@ final class ProductDataFieldStoreTest extends TestCase {
 		self::assertSame( 'global', \get_post_meta( $this->product_id, '_dws-wrwc_general_warranty-type', true ) );
 	}
 
+	public function test_a_new_product_reads_one_list_default_row_through_non_single_get_post_meta(): void {
+		$store = new ProductDataFieldStore();
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField(
+					id: 'locations',
+					type: 'multiselect',
+					label: 'Locations',
+					default_value: array( 'cart', 'email' ),
+					options: array( 'cart' => 'Cart', 'checkout' => 'Checkout', 'email' => 'Email' ),
+				),
+			),
+		);
+
+		self::assertSame( array( array( 'cart', 'email' ) ), \get_post_meta( $this->product_id, '_dws-wrwc_general_locations', false ) );
+	}
+
 	public function test_a_new_product_reads_the_default_through_the_wc_product(): void {
 		$store = new ProductDataFieldStore();
 		$store->register_tab( $this->tab() );
@@ -444,6 +461,30 @@ final class ProductDataFieldStoreTest extends TestCase {
 		self::assertSame( '', \get_post_meta( $post_id, '_dws-wrwc_general_warranty-type', true ) );
 
 		\wp_delete_post( $post_id, true );
+	}
+
+	public function test_bulk_default_injection_skips_the_consumer_gate_when_no_owned_key_is_missing(): void {
+		$gate_calls = 0;
+		$store      = new ProductDataFieldStore();
+		$store->register_tab(
+			$this->tab(
+				supports: static function ( int $product_id ) use ( &$gate_calls ): bool {
+					++$gate_calls;
+					return true;
+				},
+			),
+		);
+		$product = \wc_get_product( $this->product_id );
+		\assert( $product instanceof \WC_Product );
+		$meta_data = array(
+			(object) array( 'meta_key' => '_dws-wrwc_general_warranty-type' ),
+			(object) array( 'meta_key' => '_dws-wrwc_general_code' ),
+		);
+
+		$filtered = \apply_filters( 'woocommerce_data_store_wp_post_read_meta', $meta_data, $product );
+
+		self::assertSame( $meta_data, $filtered );
+		self::assertSame( 0, $gate_calls );
 	}
 
 	// endregion

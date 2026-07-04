@@ -5,6 +5,7 @@ namespace DeepWebSolutions\Framework\WooCommerce\ProductData;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
 
+use function DeepWebSolutions\Framework\Settings\Schema\is_valid_global_name_prefix;
 use function DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier;
 
 /**
@@ -62,7 +63,7 @@ final readonly class ProductDataTab {
 	 * @param   ?callable               $supports_product Product-type gate; stored as a Closure. Null applies the tab to every recognized product.
 	 * @param   array<string, callable> $custom_renderers Renderers for non-taxonomy field types, keyed by type token; stored as Closures.
 	 *
-	 * @throws  InvalidProductDataTabException If $slug does not match the slug charset.
+	 * @throws  InvalidProductDataTabException If $slug or $meta_key_prefix does not match its charset.
 	 */
 	public function __construct(
 		public string $slug,
@@ -77,6 +78,10 @@ final readonly class ProductDataTab {
 		if ( ! is_valid_identifier( $slug ) ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
 			throw new InvalidProductDataTabException( "Invalid product-data tab slug: '$slug'" );
+		}
+		if ( ! is_valid_global_name_prefix( $meta_key_prefix ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
+			throw new InvalidProductDataTabException( "Invalid product-data meta key prefix: '$meta_key_prefix'" );
 		}
 
 		$this->supports_product = null !== $supports_product ? \Closure::fromCallable( $supports_product ) : null;

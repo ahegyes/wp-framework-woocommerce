@@ -2,6 +2,8 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Backend;
 
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsSectionException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsSectionException;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnboundSettingsPageException;
@@ -87,8 +89,8 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * WooCommerce requires one default section keyed by an empty string; use the descriptor's first
-	 * editable section for that default and expose the rest as sub-tabs keyed by descriptor section id.
+	 * WooCommerce requires one default section keyed by an empty string; use the descriptor's first editable
+	 * section for that default and expose the rest as sub-tabs keyed by WooCommerce's sanitized section id.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -99,7 +101,7 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	protected function get_own_sections(): array {
 		$sections = array();
 		foreach ( $this->editable_page()->sections as $index => $section ) {
-			$sections[ 0 === $index ? '' : $section->id ] = $section->title;
+			$sections[ 0 === $index ? '' : \sanitize_title( $section->id ) ] = $section->title;
 		}
 
 		return $sections;
@@ -117,8 +119,12 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	 *
 	 * @param   class-string<self> $page_class Concrete subclass that renders the page.
 	 * @param   SettingsPage       $page       Descriptor to recover when that subclass is instantiated.
+	 *
+	 * @throws  InvalidSettingsSectionException If a non-default section's id sanitizes to WooCommerce's empty default-section token.
+	 * @throws  DuplicateSettingsSectionException If two non-default sections collide on WooCommerce's sanitized section id.
 	 */
 	public static function bind( string $page_class, SettingsPage $page ): void {
+		self::assert_distinct_woocommerce_section_ids( $page );
 		self::$descriptors[ $page_class ] = $page;
 	}
 
@@ -183,6 +189,10 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	/**
 	 * Resolves WooCommerce's native section id back to the descriptor section it represents.
 	 *
+	 * The first (default) section answers only to WooCommerce's empty-string default token —
+	 * never to its own sanitized id — so it can never shadow a later section; later sections
+	 * match their sanitized id.
+	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
@@ -193,12 +203,54 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 	 */
 	protected function section_for_woocommerce_section( SettingsPage $page, string $section_id ): ?SettingsSection {
 		foreach ( $page->sections as $index => $section ) {
-			if ( ( 0 === $index && '' === $section_id ) || $section->id === $section_id ) {
+			if ( 0 === $index ) {
+				if ( '' === $section_id ) {
+					return $section;
+				}
+
+				continue;
+			}
+
+			if ( \sanitize_title( $section->id ) === $section_id ) {
 				return $section;
 			}
 		}
 
 		return null;
+	}
+
+	/**
+	 * Rejects section ids WooCommerce's sanitized routing cannot address distinctly.
+	 *
+	 * WooCommerce addresses a section by sanitize_title() of its id, and the first (default)
+	 * section only by the empty string. A later section whose sanitized id is empty or collides
+	 * with a sibling's would silently render and save the wrong fields, so both fail at binding.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   SettingsPage $page Descriptor whose sections to validate.
+	 *
+	 * @throws  InvalidSettingsSectionException If a non-default section's id sanitizes to WooCommerce's empty default-section token.
+	 * @throws  DuplicateSettingsSectionException If two non-default sections collide on WooCommerce's sanitized section id.
+	 */
+	protected static function assert_distinct_woocommerce_section_ids( SettingsPage $page ): void {
+		$seen = array();
+		foreach ( \array_slice( $page->sections, 1 ) as $section ) {
+			$woocommerce_id = \sanitize_title( $section->id );
+
+			if ( '' === $woocommerce_id ) {
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
+				throw new InvalidSettingsSectionException( "Settings section id sanitizes to WooCommerce's default-section token on page '$page->slug': '$section->id'" );
+			}
+
+			if ( isset( $seen[ $woocommerce_id ] ) ) {
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
+				throw new DuplicateSettingsSectionException( "Settings sections collide on WooCommerce's sanitized section id '$woocommerce_id' on page '$page->slug': '$section->id'" );
+			}
+
+			$seen[ $woocommerce_id ] = true;
+		}
 	}
 
 	// endregion

@@ -110,12 +110,12 @@ final class ProductDataFieldStore {
 		$this->tab = $tab;
 		$this->index_fields( $tab );
 
-		\add_filter( 'woocommerce_product_data_tabs', fn ( array $tabs ): array => $this->register_tab_filter( $tabs ) );
-		\add_action( 'woocommerce_product_data_panels', fn () => $this->render_panel() );
-		\add_action( 'woocommerce_process_product_meta', fn ( int $product_id ) => $this->save( $product_id ) );
-		\add_filter( 'default_post_metadata', fn ( mixed $value, int $object_id, string $meta_key ): mixed => $this->inject_default( $value, $object_id, $meta_key ), 99, 3 );
-		\add_filter( 'woocommerce_data_store_wp_post_read_meta', fn ( array $meta_data, object $wc_object ): array => $this->inject_default_bulk( $meta_data, $wc_object ), 99, 2 );
-		\add_action( 'woocommerce_before_product_object_save', fn ( \WC_Product $product ) => $this->strip_injected_defaults( $product ) );
+		\add_filter( 'woocommerce_product_data_tabs', array( $this, 'register_tab_filter' ) );
+		\add_action( 'woocommerce_product_data_panels', array( $this, 'render_panel' ) );
+		\add_action( 'woocommerce_process_product_meta', array( $this, 'save' ) );
+		\add_filter( 'default_post_metadata', array( $this, 'inject_default' ), 99, 4 );
+		\add_filter( 'woocommerce_data_store_wp_post_read_meta', array( $this, 'inject_default_bulk' ), 99, 2 );
+		\add_action( 'woocommerce_before_product_object_save', array( $this, 'strip_injected_defaults' ) );
 	}
 
 	/**
@@ -278,7 +278,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  array<string, mixed>
 	 */
-	protected function register_tab_filter( array $tabs ): array {
+	public function register_tab_filter( array $tabs ): array {
 		global $thepostid;
 		$product_id = (int) $thepostid;
 		if ( ! $this->is_supported( $product_id ) ) {
@@ -302,7 +302,7 @@ final class ProductDataFieldStore {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
-	protected function render_panel(): void {
+	public function render_panel(): void {
 		global $thepostid;
 		$product_id = (int) $thepostid;
 		if ( ! $this->is_supported( $product_id ) ) {
@@ -348,7 +348,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @param   int $product_id Product being saved.
 	 */
-	protected function save( int $product_id ): void {
+	public function save( int $product_id ): void {
 		if ( ! $this->is_supported( $product_id ) ) {
 			return;
 		}
@@ -378,7 +378,7 @@ final class ProductDataFieldStore {
 	}
 
 	/**
-	 * Supplies a field's default when a single post-meta read finds nothing stored. Filters default_post_metadata.
+	 * Supplies a field's default when a post-meta read finds nothing stored. Filters default_post_metadata.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -386,10 +386,11 @@ final class ProductDataFieldStore {
 	 * @param   mixed  $value     Default resolved so far.
 	 * @param   int    $object_id Object being read.
 	 * @param   string $meta_key  Meta key being read.
+	 * @param   bool   $single    Whether the read expects a single value.
 	 *
 	 * @return  mixed
 	 */
-	protected function inject_default( mixed $value, int $object_id, string $meta_key ): mixed {
+	public function inject_default( mixed $value, int $object_id, string $meta_key, bool $single ): mixed {
 		$field = $this->by_meta_key[ $meta_key ] ?? null;
 		if ( null === $field ) {
 			return $value;
@@ -398,11 +399,16 @@ final class ProductDataFieldStore {
 			return $value;
 		}
 
-		return $this->default_value( $field );
+		$default = $this->default_value( $field );
+
+		return $single ? $default : array( $default );
 	}
 
 	/**
 	 * Splices each unstored field's default into a product's bulk meta read. Filters woocommerce_data_store_wp_post_read_meta.
+	 *
+	 * Scans for a missing owned key before evaluating the consumer product gate, so complete meta payloads
+	 * skip the costly gate on product hydration.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -412,22 +418,28 @@ final class ProductDataFieldStore {
 	 *
 	 * @return  array<int, object>
 	 */
-	protected function inject_default_bulk( array $meta_data, object $wc_object ): array {
-		// The object itself proves the product exists, so the existence floor is skipped here — this runs on
-		// every product meta hydration, front-end loops included — and only the consumer gate is evaluated.
-		if ( ! $wc_object instanceof \WC_Product || ! $this->passes_gate( $wc_object->get_id() ) ) {
+	public function inject_default_bulk( array $meta_data, object $wc_object ): array {
+		if ( ! $wc_object instanceof \WC_Product ) {
 			return $meta_data;
 		}
 
 		$existing = \array_flip( \array_column( $meta_data, 'meta_key' ) );
+		$missing  = array();
 		foreach ( $this->by_meta_key as $meta_key => $field ) {
 			if ( ! isset( $existing[ $meta_key ] ) ) {
-				$meta_data[] = (object) array(
-					'meta_id'    => 0,
-					'meta_key'   => $meta_key,
-					'meta_value' => $this->default_value( $field ),
-				);
+				$missing[ $meta_key ] = $field;
 			}
+		}
+		if ( array() === $missing || ! $this->passes_gate( $wc_object->get_id() ) ) {
+			return $meta_data;
+		}
+
+		foreach ( $missing as $meta_key => $field ) {
+			$meta_data[] = (object) array(
+				'meta_id'    => 0,
+				'meta_key'   => $meta_key,
+				'meta_value' => $this->default_value( $field ),
+			);
 		}
 
 		return $meta_data;
@@ -448,7 +460,7 @@ final class ProductDataFieldStore {
 	 *
 	 * @param   \WC_Product $product Product about to be saved.
 	 */
-	protected function strip_injected_defaults( \WC_Product $product ): void {
+	public function strip_injected_defaults( \WC_Product $product ): void {
 		$product_id = $product->get_id();
 		foreach ( $this->by_meta_key as $meta_key => $field ) {
 			if ( $meta_key === $this->preserve_key ) {

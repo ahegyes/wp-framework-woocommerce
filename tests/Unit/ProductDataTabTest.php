@@ -16,6 +16,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( SettingsField::class )]
 #[UsesClass( SettingsSection::class )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_global_name_prefix' )]
 final class ProductDataTabTest extends TestCase {
 	public function test_minimal_construction_exposes_defaults(): void {
 		$tab = new ProductDataTab( slug: 'dws_warranty', label: 'Warranty', meta_key_prefix: '_dws-wrwc_', sections: array() );
@@ -114,6 +115,13 @@ final class ProductDataTabTest extends TestCase {
 		new ProductDataTab( slug: $slug, label: 'L', meta_key_prefix: '_p_', sections: array() );
 	}
 
+	#[DataProvider( 'invalid_meta_key_prefixes' )]
+	public function test_rejects_an_invalid_meta_key_prefix( string $prefix ): void {
+		$this->expectException( InvalidProductDataTabException::class );
+
+		new ProductDataTab( slug: 'dws_warranty', label: 'L', meta_key_prefix: $prefix, sections: array() );
+	}
+
 	public function test_an_invalid_slug_throws_an_invalid_argument(): void {
 		$this->expectException( \InvalidArgumentException::class );
 
@@ -131,6 +139,19 @@ final class ProductDataTabTest extends TestCase {
 			'uppercase'     => array( 'Warranty' ),
 			'space'         => array( 'my tab' ),
 			'slash'         => array( 'a/b' ),
+		);
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function invalid_meta_key_prefixes(): array {
+		return array(
+			'empty'         => array( '' ),
+			'leading digit' => array( '1dws_' ),
+			'uppercase'     => array( '_DWS_' ),
+			'space'         => array( '_dws warranty_' ),
+			'slash'         => array( '_dws/warranty_' ),
 		);
 	}
 }

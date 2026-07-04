@@ -2,6 +2,8 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration;
 
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsSectionException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsSectionException;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
@@ -94,6 +96,19 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 		self::assertNotContains( 'dws-foo_enabled', $ids );
 	}
 
+	public function test_routes_a_later_section_by_woocommerces_sanitized_section_id(): void {
+		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->unstable_section_page() );
+
+		$page     = new FooWCSettingsPage();
+		$sections = $page->get_sections();
+		$settings = $page->get_settings_for_section( 'advanced' );
+		$ids      = \array_column( $settings, 'id' );
+
+		self::assertSame( 'Advanced', $sections['advanced'] ?? null );
+		self::assertArrayNotHasKey( 'advanced-', $sections );
+		self::assertContains( 'dws-foo_mode', $ids );
+	}
+
 	public function test_two_distinct_subclasses_recover_their_own_descriptors(): void {
 		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
 		DescriptorBackedWCSettingsPage::bind( BarWCSettingsPage::class, $this->page( 'dws-bar', 'dws_bar', 'Bar' ) );
@@ -117,6 +132,64 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 		$this->expectException( UnboundSettingsPageException::class );
 
 		new UnboundWCSettingsPage();
+	}
+
+	public function test_the_first_section_matches_only_the_default_token(): void {
+		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->multi_section_page() );
+
+		$page = new FooWCSettingsPage();
+
+		// The first section's fields answer to WooCommerce's default token, not to the
+		// section's own sanitized id — otherwise it could shadow a later section.
+		self::assertNotSame( array(), $page->get_settings_for_section( '' ) );
+		self::assertSame( array(), $page->get_settings_for_section( 'general' ) );
+	}
+
+	public function test_binding_two_sections_colliding_on_the_sanitized_id_throws(): void {
+		$page = new SettingsPage(
+			slug: 'dws-foo',
+			page_title: 'Foo Settings',
+			menu_title: 'Foo',
+			capability: 'manage_woocommerce',
+			location: 'dws_foo',
+			sections: array(
+				new SettingsSection(
+					'general',
+					'General',
+					array( new SettingsField( id: 'enabled', type: 'checkbox', label: 'Enabled' ) ),
+				),
+				new SettingsSection(
+					'advanced',
+					'Advanced',
+					array( new SettingsField( id: 'mode', type: 'text', label: 'Mode' ) ),
+				),
+				new SettingsSection(
+					'advanced-',
+					'Advanced Too',
+					array( new SettingsField( id: 'variant', type: 'text', label: 'Variant' ) ),
+				),
+			),
+		);
+
+		$this->expectException( DuplicateSettingsSectionException::class );
+		$this->expectExceptionMessage( 'advanced' );
+
+		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $page );
+	}
+
+	public function test_binding_a_section_whose_id_sanitizes_to_the_default_token_throws(): void {
+		// The section-id charset cannot produce an empty sanitize_title() result on its own, but
+		// sanitize_title() is filterable at runtime; the guard fails closed against that seam.
+		$force_empty = static fn ( string $title ): string => '';
+		\add_filter( 'sanitize_title', $force_empty );
+
+		try {
+			$this->expectException( InvalidSettingsSectionException::class );
+
+			DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->multi_section_page() );
+		} finally {
+			\remove_filter( 'sanitize_title', $force_empty );
+		}
 	}
 
 	private function page( string $slug, string $location, string $menu_title ): SettingsPage {
@@ -151,6 +224,28 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 				),
 				new SettingsSection(
 					'advanced',
+					'Advanced',
+					array( new SettingsField( id: 'mode', type: 'text', label: 'Mode' ) ),
+				),
+			),
+		);
+	}
+
+	private function unstable_section_page(): SettingsPage {
+		return new SettingsPage(
+			slug: 'dws-foo',
+			page_title: 'Foo Settings',
+			menu_title: 'Foo',
+			capability: 'manage_woocommerce',
+			location: 'dws_foo',
+			sections: array(
+				new SettingsSection(
+					'general',
+					'General',
+					array( new SettingsField( id: 'enabled', type: 'checkbox', label: 'Enabled' ) ),
+				),
+				new SettingsSection(
+					'advanced-',
 					'Advanced',
 					array( new SettingsField( id: 'mode', type: 'text', label: 'Mode' ) ),
 				),
