@@ -9,6 +9,7 @@ use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 
 use function DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes;
+use function DeepWebSolutions\Framework\Settings\Schema\stringify_for_output;
 use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
 
 /**
@@ -22,7 +23,7 @@ use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
  * @since   2.0.0
  * @version 2.0.0
  */
-final class WCSettingsBuilder {
+final readonly class WCSettingsBuilder {
 	// region MAGIC METHODS
 
 	/**
@@ -195,7 +196,7 @@ final class WCSettingsBuilder {
 	protected function stringify_labels( array $options ): array {
 		$labels = array();
 		foreach ( $options as $value => $label ) {
-			$labels[ $value ] = \is_scalar( $label ) ? (string) $label : '';
+			$labels[ $value ] = stringify_for_output( $label );
 		}
 
 		return $labels;
@@ -216,10 +217,7 @@ final class WCSettingsBuilder {
 			return array();
 		}
 
-		return \array_map(
-			static fn ( mixed $value ): string => \is_scalar( $value ) ? (string) $value : '',
-			$default_value,
-		);
+		return \array_map( static fn ( mixed $value ): string => stringify_for_output( $value ), $default_value );
 	}
 
 	// endregion

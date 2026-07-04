@@ -24,9 +24,6 @@
     "psr/log": "^3"
   },
 
-  "minimum-stability": "dev",
-  "prefer-stable": true,
-
   "autoload": {
     "psr-4": {
       "DeepWebSolutions\\Framework\\WooCommerce\\": "src/"
@@ -44,12 +41,6 @@
   "extra": {
     "branch-alias": {
       "dev-trunk": "2.0.x-dev"
-    },
-    "installer-paths": {
-      "vendor/{$vendor}/{$name}/": [
-        "type:wordpress-plugin",
-        "type:wordpress-theme"
-      ]
     },
     "scoping-stubs": [
       "php-stubs/wordpress-stubs",

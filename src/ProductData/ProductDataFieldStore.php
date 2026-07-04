@@ -71,6 +71,16 @@ final class ProductDataFieldStore {
 	 */
 	protected ?string $preserve_key = null;
 
+	/**
+	 * Processor that sanitizes and validates submitted values.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @var     FieldProcessor
+	 */
+	protected FieldProcessor $processor;
+
 	// endregion
 
 	// region MAGIC METHODS
@@ -86,9 +96,9 @@ final class ProductDataFieldStore {
 	 */
 	public function __construct(
 		protected ProductDataFieldRenderer $renderer = new ProductDataFieldRenderer(),
-		protected ?FieldProcessor $processor = null,
+		?FieldProcessor $processor = null,
 	) {
-		$this->processor ??= new FieldProcessor( type_sanitizers: wordpress_field_type_sanitizers() );
+		$this->processor = $processor ?? new FieldProcessor( type_sanitizers: wordpress_field_type_sanitizers() );
 	}
 
 	// endregion
@@ -369,7 +379,6 @@ final class ProductDataFieldStore {
 				if ( $result instanceof Failure ) {
 					continue;
 				}
-				\assert( $result instanceof Success );
 				$product->update_meta_data( $meta_key, $result->value );
 			}
 		}
@@ -607,7 +616,7 @@ final class ProductDataFieldStore {
 			// The checkbox submit convention is its value when checked, nothing when unchecked; the descriptor's
 			// sanitize/validate still apply, preserving the prior value when validation rejects.
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the product-edit nonce before woocommerce_process_product_meta fires.
-			return $this->processor()->process_or_reject( $field, array( $field->id => isset( $_POST[ $meta_key ] ) ? 'yes' : 'no' ) );
+			return $this->processor->process_or_reject( $field, array( $field->id => isset( $_POST[ $meta_key ] ) ? 'yes' : 'no' ) );
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified by WooCommerce; see above.
@@ -631,21 +640,7 @@ final class ProductDataFieldStore {
 			return Success::from( $value );
 		}
 
-		return $this->processor()->process_or_reject( $field, null === $raw ? array() : array( $field->id => $raw ) );
-	}
-
-	/**
-	 * Returns the configured processor.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @return  FieldProcessor
-	 */
-	protected function processor(): FieldProcessor {
-		\assert( $this->processor instanceof FieldProcessor );
-
-		return $this->processor;
+		return $this->processor->process_or_reject( $field, null === $raw ? array() : array( $field->id => $raw ) );
 	}
 
 	/**

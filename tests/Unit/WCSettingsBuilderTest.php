@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_checkbox_checked' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\stringify_for_output' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\WooCommerce\to_yes_no' )]
 final class WCSettingsBuilderTest extends TestCase {
 	public function test_emits_a_title_fields_sectionend_sequence_per_section(): void {

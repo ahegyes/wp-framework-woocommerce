@@ -160,6 +160,24 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 		return \delete_option( $this->option_key( $field_id ) );
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 */
+	#[\Override]
+	public function option_keys( SettingsPage $page ): array {
+		$keys = array();
+		foreach ( $page->sections as $section ) {
+			foreach ( $section->fields as $field ) {
+				$keys[] = $page->slug . '_' . $field->id;
+			}
+		}
+
+		return $keys;
+	}
+
 	// endregion
 
 	// region HELPERS

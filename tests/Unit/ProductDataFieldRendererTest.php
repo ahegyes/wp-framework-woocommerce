@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_checkbox_checked' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\stringify_for_output' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\WooCommerce\to_yes_no' )]
 final class ProductDataFieldRendererTest extends TestCase {
 	public function test_text_args_carry_id_name_label_value_and_type(): void {

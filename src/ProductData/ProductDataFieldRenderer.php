@@ -8,6 +8,7 @@ use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 
 use function DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes;
+use function DeepWebSolutions\Framework\Settings\Schema\stringify_for_output;
 use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
 
 /**
@@ -21,7 +22,7 @@ use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
  * @since   2.0.0
  * @version 2.0.0
  */
-final class ProductDataFieldRenderer {
+final readonly class ProductDataFieldRenderer {
 	// region MAGIC METHODS
 
 	/**
@@ -80,15 +81,15 @@ final class ProductDataFieldRenderer {
 				break;
 			case FieldType::Select:
 			case FieldType::Radio:
-				$args['value']   = $this->stringify( $value );
+				$args['value']   = stringify_for_output( $value );
 				$args['options'] = $this->stringify_labels( $this->options_resolver->resolve( $field->options ) );
 				break;
 			case FieldType::Textarea:
-				$args['value'] = $this->stringify( $value );
+				$args['value'] = stringify_for_output( $value );
 				break;
 			default:
 				$args['type']  = $type->value;
-				$args['value'] = $this->stringify( $value );
+				$args['value'] = stringify_for_output( $value );
 				break;
 		}
 
@@ -158,24 +159,10 @@ final class ProductDataFieldRenderer {
 	protected function stringify_labels( array $options ): array {
 		$labels = array();
 		foreach ( $options as $value => $label ) {
-			$labels[ $value ] = \is_scalar( $label ) ? (string) $label : '';
+			$labels[ $value ] = stringify_for_output( $label );
 		}
 
 		return $labels;
-	}
-
-	/**
-	 * Coerces a value to a string for a scalar-bound control; a non-scalar becomes an empty string.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   mixed $value Value to stringify.
-	 *
-	 * @return  string
-	 */
-	protected function stringify( mixed $value ): string {
-		return \is_scalar( $value ) ? (string) $value : '';
 	}
 
 	// endregion

@@ -15,7 +15,7 @@ use DeepWebSolutions\Framework\Settings\MetaField\ObjectMetaRepositoryInterface;
  * @since   2.0.0
  * @version 2.0.0
  */
-final class OrderMetaRepository implements ObjectMetaRepositoryInterface {
+final readonly class OrderMetaRepository implements ObjectMetaRepositoryInterface {
 	// region INHERITED METHODS
 
 	/**

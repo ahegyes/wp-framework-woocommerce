@@ -190,6 +190,27 @@ final class OrderFieldStoreTest extends TestCase {
 		self::assertFalse( $repo->has( $this->order_id, 'unlocked' ) );
 	}
 
+	public function test_crud_addresses_the_same_meta_key_the_form_save_writes(): void {
+		$store = new OrderFieldStore();
+		$group = $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) );
+		$store->register( $group, $this->placement() );
+
+		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'note' => 'hi' ) );
+		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
+
+		self::assertTrue( $store->has( $group, $this->order_id, 'note' ) );
+		self::assertSame( 'hi', $store->get( $group, $this->order_id, 'note' ) );
+
+		$store->set( $group, $this->order_id, 'note', 'bye' );
+		$order = \wc_get_order( $this->order_id );
+		\assert( $order instanceof \WC_Abstract_Order );
+		self::assertSame( 'bye', $order->get_meta( 'note', true ) );
+
+		self::assertTrue( $store->delete( $group, $this->order_id, 'note' ) );
+		self::assertFalse( ( new OrderMetaRepository() )->has( $this->order_id, 'note' ) );
+		self::assertSame( array( 'note' ), $store->meta_keys( $group ) );
+	}
+
 	public function test_a_zero_value_is_stored_not_revoked(): void {
 		$repo  = new OrderMetaRepository();
 		$store = new OrderFieldStore();

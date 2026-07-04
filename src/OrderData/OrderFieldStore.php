@@ -4,17 +4,17 @@ namespace DeepWebSolutions\Framework\WooCommerce\OrderData;
 
 use Automattic\WooCommerce\Utilities\OrderUtil;
 use DeepWebSolutions\Framework\Settings\MetaField\ObjectFieldForm;
+use DeepWebSolutions\Framework\Settings\MetaField\ObjectMetaRepositoryInterface;
 use DeepWebSolutions\Framework\Settings\MetaField\ValueObjects\FieldGroup;
 use DeepWebSolutions\Framework\Settings\MetaField\ValueObjects\MetaBoxPlacement;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\Field\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\Field\FieldRenderer;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\Exceptions\UnsupportedOrderScreenException;
 
-use function DeepWebSolutions\Framework\Settings\Schema\wordpress_field_type_sanitizers;
-
 /**
- * Registers a field group as a WooCommerce-order meta box.
+ * Registers a field group as a WooCommerce-order meta box and stores its fields as order meta.
  *
  * Resolves the order edit screen at registration — the legacy post screen or, under HPOS, the orders
  * page (and the admin.php variant WooCommerce uses for a user who cannot see the WooCommerce menu) — so
@@ -22,6 +22,11 @@ use function DeepWebSolutions\Framework\Settings\Schema\wordpress_field_type_san
  * object-field form engine backed by an order-meta repository. Both render and save are gated on the
  * configured box capability, defaulting to WooCommerce's own order-edit check: the order's edit
  * capability, or manage_woocommerce.
+ *
+ * Beyond registration, the store exposes field-addressed CRUD over the same storage keys and value
+ * semantics the form path applies — get/set/has/delete by group and field id — plus meta_keys() for the
+ * consumer's uninstall cleanup. Object fields are revoke-based, so reads never fall back to the field's
+ * declared default.
  *
  * Requires WooCommerce active: the order-screen resolution, meta box, and order CRUD all call
  * WooCommerce APIs and fatal without it.
@@ -62,6 +67,26 @@ final class OrderFieldStore {
 	 */
 	protected const HPOS_ORDER_SCREEN_RESTRICTED = 'admin_page_wc-orders';
 
+	/**
+	 * Registered groups and placements keyed by group id.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @var     array<string, array{group: FieldGroup, placement: MetaBoxPlacement}>
+	 */
+	protected array $registrations = array();
+
+	/**
+	 * Shared form engine that renders and saves the registered groups and resolves their storage keys.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @var     ObjectFieldForm
+	 */
+	protected ObjectFieldForm $form;
+
 	// endregion
 
 	// region MAGIC METHODS
@@ -72,14 +97,16 @@ final class OrderFieldStore {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   FieldRenderer   $renderer  Renderer for the box's field controls.
-	 * @param   ?FieldProcessor $processor Processor for sanitizing submitted values; null applies one carrying the per-type default sanitizers.
+	 * @param   FieldRenderer                 $renderer   Renderer for the box's field controls.
+	 * @param   ?FieldProcessor               $processor  Processor for sanitizing submitted values; null applies one carrying the per-type default sanitizers.
+	 * @param   ObjectMetaRepositoryInterface $repository Repository the groups' fields read from and write to.
 	 */
 	public function __construct(
-		protected FieldRenderer $renderer = new FieldRenderer(),
-		protected ?FieldProcessor $processor = null,
+		FieldRenderer $renderer = new FieldRenderer(),
+		?FieldProcessor $processor = null,
+		protected ObjectMetaRepositoryInterface $repository = new OrderMetaRepository(),
 	) {
-		$this->processor ??= new FieldProcessor( type_sanitizers: wordpress_field_type_sanitizers() );
+		$this->form = new ObjectFieldForm( $this->repository, $renderer, $processor );
 	}
 
 	// endregion
@@ -98,13 +125,158 @@ final class OrderFieldStore {
 	 * @throws  UnsupportedOrderScreenException If the placement names a screen other than the order screen.
 	 */
 	public function register( FieldGroup $group, MetaBoxPlacement $placement ): void {
-		$form = new ObjectFieldForm( new OrderMetaRepository(), $this->renderer, $this->processor );
+		$screens = $this->resolve_screens( $placement->screen );
 
-		foreach ( $this->resolve_screens( $placement->screen ) as $screen ) {
-			\add_action( "add_meta_boxes_$screen", fn ( mixed $wc_object ) => $this->add_box( $group, $placement, $screen, $form, $wc_object ) );
+		$this->registrations[ $group->id ] = array(
+			'group'     => $group,
+			'placement' => $placement,
+		);
+
+		foreach ( $screens as $screen ) {
+			\add_action( "add_meta_boxes_$screen", array( $this, 'add_boxes' ) );
 		}
 
-		\add_action( 'woocommerce_process_shop_order_meta', fn ( int $object_id ) => $this->save_box( $group, $placement, $form, $object_id ) );
+		\add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_boxes' ) );
+	}
+
+	/**
+	 * Retrieves a field's stored value for an order, or $default_value when nothing is stored. Object fields
+	 * are revoke-based, so the field's declared default is never a read-time fallback.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   FieldGroup $group         Group that declares the field.
+	 * @param   int        $order_id      Order to read.
+	 * @param   string     $field_id      Field whose value to read.
+	 * @param   mixed      $default_value Value to return when nothing is stored.
+	 *
+	 * @throws  DuplicateSettingsFieldException If two of the group's fields share an id or storage key.
+	 * @throws  InvalidSettingsFieldException If the group declares no field with the given id.
+	 *
+	 * @return  mixed
+	 */
+	public function get( FieldGroup $group, int $order_id, string $field_id, mixed $default_value = null ): mixed {
+		return $this->repository->get( $order_id, $this->form->meta_key_of( $group, $order_id, $field_id ), $default_value );
+	}
+
+	/**
+	 * Persists a field's value for an order with the form path's store-or-revoke semantics: a checkbox
+	 * value is stored in its canonical 'yes'/'no' form (false stores 'no'), and a non-checkbox value a
+	 * form save would not store — false, a cleared field ('') or an empty multi-select (array()) —
+	 * revokes the meta key instead. The write is programmatic: the descriptor's sanitize/validate seam
+	 * applies to form submissions only.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   FieldGroup $group    Group that declares the field.
+	 * @param   int        $order_id Order to write.
+	 * @param   string     $field_id Field whose value to write.
+	 * @param   mixed      $value    Value to persist.
+	 *
+	 * @throws  DuplicateSettingsFieldException If two of the group's fields share an id or storage key.
+	 * @throws  InvalidSettingsFieldException If the group declares no field with the given id.
+	 */
+	public function set( FieldGroup $group, int $order_id, string $field_id, mixed $value ): void {
+		$this->form->store( $group, $order_id, $field_id, $value );
+	}
+
+	/**
+	 * Whether a real value is stored for a field on an order.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   FieldGroup $group    Group that declares the field.
+	 * @param   int        $order_id Order to check.
+	 * @param   string     $field_id Field to check.
+	 *
+	 * @throws  DuplicateSettingsFieldException If two of the group's fields share an id or storage key.
+	 * @throws  InvalidSettingsFieldException If the group declares no field with the given id.
+	 *
+	 * @return  bool
+	 */
+	public function has( FieldGroup $group, int $order_id, string $field_id ): bool {
+		return $this->repository->has( $order_id, $this->form->meta_key_of( $group, $order_id, $field_id ) );
+	}
+
+	/**
+	 * Deletes a field's stored value from an order.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   FieldGroup $group    Group that declares the field.
+	 * @param   int        $order_id Order to clear.
+	 * @param   string     $field_id Field to clear.
+	 *
+	 * @throws  DuplicateSettingsFieldException If two of the group's fields share an id or storage key.
+	 * @throws  InvalidSettingsFieldException If the group declares no field with the given id.
+	 *
+	 * @return  bool True if a value was deleted, false if none existed.
+	 */
+	public function delete( FieldGroup $group, int $order_id, string $field_id ): bool {
+		return $this->repository->delete( $order_id, $this->form->meta_key_of( $group, $order_id, $field_id ) );
+	}
+
+	/**
+	 * Returns every storage key a group's fields resolve to, for the consumer's uninstall cleanup. The
+	 * fields are built through the group's provider for object id 0 — the objectless evaluation — so a
+	 * provider that varies its fields per object is enumerated by the consumer per object instead.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   FieldGroup $group Group whose storage keys to enumerate.
+	 *
+	 * @throws  DuplicateSettingsFieldException If two of the group's fields share an id or storage key.
+	 *
+	 * @return  list<string>
+	 */
+	public function meta_keys( FieldGroup $group ): array {
+		return $this->form->meta_keys( $group );
+	}
+
+	// endregion
+
+	// region HOOKS
+
+	/**
+	 * Adds every registered box on the order screen whose action fired, recovering the screen from the
+	 * running action's name. Hooked to add_meta_boxes_{screen} for each resolved order screen.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   mixed $wc_object Screen object WordPress passes the callback (a WooCommerce order or WP_Post).
+	 */
+	public function add_boxes( mixed $wc_object ): void {
+		$action = \current_action();
+		if ( false === $action ) {
+			return;
+		}
+
+		$screen = \substr( $action, \strlen( 'add_meta_boxes_' ) );
+		foreach ( $this->registrations as $registration ) {
+			$this->add_box( $registration['group'], $registration['placement'], $screen, $wc_object );
+		}
+	}
+
+	/**
+	 * Saves every registered box for an order. Hooked to woocommerce_process_shop_order_meta.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   int $object_id Order whose meta to write.
+	 *
+	 * @throws  DuplicateSettingsFieldException If two of a group's fields share an id or storage key.
+	 */
+	public function save_boxes( int $object_id ): void {
+		foreach ( $this->registrations as $registration ) {
+			$this->save_box( $registration['group'], $registration['placement'], $object_id );
+		}
 	}
 
 	// endregion
@@ -138,8 +310,7 @@ final class OrderFieldStore {
 	}
 
 	/**
-	 * Registers the box with WordPress when the current user can edit the order. Hooked to
-	 * add_meta_boxes_{screen}, which passes the order (or its post under the legacy screen).
+	 * Registers the box with WordPress when the current user can edit the order.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -147,10 +318,9 @@ final class OrderFieldStore {
 	 * @param   FieldGroup       $group     Group the box renders.
 	 * @param   MetaBoxPlacement $placement Placement describing the box's context, priority, and capability.
 	 * @param   string           $screen    Resolved screen the box renders on.
-	 * @param   ObjectFieldForm  $form      Engine that renders the group's fields.
 	 * @param   mixed            $wc_object Screen object WordPress passes the callback (a WooCommerce order or WP_Post).
 	 */
-	protected function add_box( FieldGroup $group, MetaBoxPlacement $placement, string $screen, ObjectFieldForm $form, mixed $wc_object ): void {
+	protected function add_box( FieldGroup $group, MetaBoxPlacement $placement, string $screen, mixed $wc_object ): void {
 		$order = \wc_get_order( $this->object_id_of( $wc_object ) );
 		if ( ! $order instanceof \WC_Abstract_Order || ! $this->can_edit_order( $placement, $order ) ) {
 			return;
@@ -164,7 +334,7 @@ final class OrderFieldStore {
 		\add_meta_box(
 			$group->id,
 			\esc_html( $group->title ),
-			fn ( mixed $screen_object ) => $form->render( $group, $this->object_id_of( $screen_object ) ),
+			fn ( mixed $screen_object ) => $this->form->render( $group, $this->object_id_of( $screen_object ) ),
 			$screen,
 			$placement->context,
 			$priority,
@@ -172,25 +342,24 @@ final class OrderFieldStore {
 	}
 
 	/**
-	 * Saves the box when the current user can edit the order. Hooked to woocommerce_process_shop_order_meta.
+	 * Saves the box when the current user can edit the order.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
 	 * @param   FieldGroup       $group     Group to save.
 	 * @param   MetaBoxPlacement $placement Placement whose capability gates the save.
-	 * @param   ObjectFieldForm  $form      Engine that processes and persists the group's fields.
 	 * @param   int              $object_id Order whose meta to write.
 	 *
 	 * @throws  DuplicateSettingsFieldException If two of the group's fields share an id or storage key.
 	 */
-	protected function save_box( FieldGroup $group, MetaBoxPlacement $placement, ObjectFieldForm $form, int $object_id ): void {
+	protected function save_box( FieldGroup $group, MetaBoxPlacement $placement, int $object_id ): void {
 		$order = \wc_get_order( $object_id );
 		if ( ! $order instanceof \WC_Abstract_Order || ! $this->can_edit_order( $placement, $order ) ) {
 			return;
 		}
 
-		$form->save( $group, $object_id );
+		$this->form->save( $group, $object_id );
 	}
 
 	/**

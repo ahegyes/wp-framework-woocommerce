@@ -81,6 +81,36 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 		self::assertFalse( $backend->has( 'store_name' ) );
 	}
 
+	public function test_option_keys_names_exactly_the_rows_the_backend_persists_into(): void {
+		$page = $this->page(
+			'dws-foo',
+			'dws_foo',
+			'Foo',
+			array(
+				new SettingsField( id: 'store_name', type: 'text', label: 'Store Name' ),
+				new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag' ),
+			),
+		);
+
+		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend->register_page( $page );
+
+		$backend->set( 'store_name', 'Acme' );
+		$backend->set( 'flag', 'no' );
+
+		$keys = $backend->option_keys( $page );
+
+		self::assertSame( array( 'dws-foo_store_name', 'dws-foo_flag' ), $keys );
+
+		// Deleting exactly the enumerated rows clears the page — the uninstall flow the enumerator serves.
+		foreach ( $keys as $key ) {
+			self::assertNotFalse( \get_option( $key ) );
+			\delete_option( $key );
+		}
+		self::assertFalse( $backend->has( 'store_name' ) );
+		self::assertFalse( $backend->has( 'flag' ) );
+	}
+
 	public function test_a_stored_value_is_distinct_from_an_absent_one(): void {
 		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
 		$backend->register_page(
