@@ -53,7 +53,15 @@ final class ProductDataFieldRendererTest extends TestCase {
 	}
 
 	public function test_strips_event_handler_attributes_but_keeps_plain_attributes(): void {
-		$field = new SettingsField( id: 'store', type: 'text', label: 'Store', attributes: array( 'onclick' => 'evil()', 'data-x' => 'ok' ) );
+		$field = new SettingsField(
+			id: 'store',
+			type: 'text',
+			label: 'Store',
+			attributes: array(
+				'onclick' => 'evil()',
+				'data-x'  => 'ok',
+			)
+		);
 
 		$html = $this->render( $field, 'Acme', '_p_general_store' );
 
@@ -76,7 +84,15 @@ final class ProductDataFieldRendererTest extends TestCase {
 	}
 
 	public function test_renders_a_select_with_the_current_option_selected(): void {
-		$field = new SettingsField( id: 'gw', type: 'select', label: 'Gateway', options: array( 'stripe' => 'Stripe', 'paypal' => 'PayPal' ) );
+		$field = new SettingsField(
+			id: 'gw',
+			type: 'select',
+			label: 'Gateway',
+			options: array(
+				'stripe' => 'Stripe',
+				'paypal' => 'PayPal',
+			)
+		);
 
 		$html = $this->render( $field, 'paypal', '_p_gw' );
 
@@ -86,7 +102,16 @@ final class ProductDataFieldRendererTest extends TestCase {
 	}
 
 	public function test_renders_a_multiselect_with_brackets_and_multiple(): void {
-		$field = new SettingsField( id: 'tags', type: 'multiselect', label: 'Tags', options: array( 'a' => 'A', 'b' => 'B', 'c' => 'C' ) );
+		$field = new SettingsField(
+			id: 'tags',
+			type: 'multiselect',
+			label: 'Tags',
+			options: array(
+				'a' => 'A',
+				'b' => 'B',
+				'c' => 'C',
+			)
+		);
 
 		$html = $this->render( $field, array( 'a', 'c' ), '_p_tags' );
 
@@ -98,7 +123,15 @@ final class ProductDataFieldRendererTest extends TestCase {
 	}
 
 	public function test_renders_radio_inputs_with_the_current_value_checked(): void {
-		$field = new SettingsField( id: 'size', type: 'radio', label: 'Size', options: array( 's' => 'Small', 'l' => 'Large' ) );
+		$field = new SettingsField(
+			id: 'size',
+			type: 'radio',
+			label: 'Size',
+			options: array(
+				's' => 'Small',
+				'l' => 'Large',
+			)
+		);
 
 		$html = $this->render( $field, 'l', '_p_size' );
 

@@ -116,7 +116,13 @@ final class WCSettingsBuilderTest extends TestCase {
 	public function test_resolved_options_are_included_for_a_choice_field(): void {
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_gateway' );
 
-		self::assertSame( array( 'stripe' => 'Stripe', 'paypal' => 'PayPal' ), $row['options'] );
+		self::assertSame(
+			array(
+				'stripe' => 'Stripe',
+				'paypal' => 'PayPal',
+			),
+			$row['options']
+		);
 	}
 
 	public function test_options_are_omitted_for_a_field_without_any(): void {
@@ -146,13 +152,22 @@ final class WCSettingsBuilderTest extends TestCase {
 				id: 'qty',
 				type: 'number',
 				label: 'Quantity',
-				attributes: array( 'min' => '0', 'step' => '1' ),
+				attributes: array(
+					'min'  => '0',
+					'step' => '1',
+				),
 			),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_qty' );
 
-		self::assertSame( array( 'min' => '0', 'step' => '1' ), $row['custom_attributes'] );
+		self::assertSame(
+			array(
+				'min'  => '0',
+				'step' => '1',
+			),
+			$row['custom_attributes']
+		);
 	}
 
 	public function test_custom_attributes_are_omitted_when_empty(): void {
@@ -225,12 +240,26 @@ final class WCSettingsBuilderTest extends TestCase {
 
 	public function test_non_string_option_labels_are_stringified(): void {
 		$page = $this->page_with_field(
-			new SettingsField( id: 'amount', type: 'select', label: 'Amount', options: array( 1 => 100, 2 => 'Two' ) ),
+			new SettingsField(
+				id: 'amount',
+				type: 'select',
+				label: 'Amount',
+				options: array(
+					1 => 100,
+					2 => 'Two',
+				)
+			),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_amount' );
 
-		self::assertSame( array( 1 => '100', 2 => 'Two' ), $row['options'] );
+		self::assertSame(
+			array(
+				1 => '100',
+				2 => 'Two',
+			),
+			$row['options']
+		);
 	}
 
 	public function test_a_non_scalar_option_label_becomes_an_empty_string(): void {
@@ -250,7 +279,11 @@ final class WCSettingsBuilderTest extends TestCase {
 				id: 'qty',
 				type: 'number',
 				label: 'Quantity',
-				attributes: array( 'onclick' => 'evil()', '1bad' => 'x', 'min' => '0' ),
+				attributes: array(
+					'onclick' => 'evil()',
+					'1bad'    => 'x',
+					'min'     => '0',
+				),
 			),
 		);
 
@@ -300,7 +333,16 @@ final class WCSettingsBuilderTest extends TestCase {
 
 	public function test_multiselect_default_values_are_stringified(): void {
 		$page = $this->page_with_field(
-			new SettingsField( id: 'tags', type: 'multiselect', label: 'Tags', default_value: array( 1, 2 ), options: array( 1 => 'One', 2 => 'Two' ) ),
+			new SettingsField(
+				id: 'tags',
+				type: 'multiselect',
+				label: 'Tags',
+				default_value: array( 1, 2 ),
+				options: array(
+					1 => 'One',
+					2 => 'Two',
+				)
+			),
 		);
 
 		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_tags' );
@@ -342,7 +384,15 @@ final class WCSettingsBuilderTest extends TestCase {
 					'General',
 					array(
 						new SettingsField( id: 'store_name', type: 'text', label: 'Store Name', default_value: 'Acme' ),
-						new SettingsField( id: 'gateway', type: 'select', label: 'Gateway', options: array( 'stripe' => 'Stripe', 'paypal' => 'PayPal' ) ),
+						new SettingsField(
+							id: 'gateway',
+							type: 'select',
+							label: 'Gateway',
+							options: array(
+								'stripe' => 'Stripe',
+								'paypal' => 'PayPal',
+							)
+						),
 					),
 				),
 				new SettingsSection(

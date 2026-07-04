@@ -67,7 +67,7 @@ final class ProductDataTabTest extends TestCase {
 				return $product_id > 0;
 			}
 		};
-		$tab = new ProductDataTab( slug: 'dws_warranty', label: 'W', meta_key_prefix: '_p_', sections: array(), supports_product: array( $gate, 'supports' ) );
+		$tab  = new ProductDataTab( slug: 'dws_warranty', label: 'W', meta_key_prefix: '_p_', sections: array(), supports_product: array( $gate, 'supports' ) );
 
 		self::assertInstanceOf( \Closure::class, $tab->supports_product );
 		self::assertTrue( ( $tab->supports_product )( 5 ) );
@@ -81,7 +81,7 @@ final class ProductDataTabTest extends TestCase {
 				$this->received = $meta_key;
 			}
 		};
-		$tab = new ProductDataTab( slug: 'dws_warranty', label: 'W', meta_key_prefix: '_p_', sections: array(), custom_renderers: array( 'composite' => array( $renderer, 'render' ) ) );
+		$tab      = new ProductDataTab( slug: 'dws_warranty', label: 'W', meta_key_prefix: '_p_', sections: array(), custom_renderers: array( 'composite' => array( $renderer, 'render' ) ) );
 
 		self::assertInstanceOf( \Closure::class, $tab->custom_renderers['composite'] );
 		( $tab->custom_renderers['composite'] )( new SettingsField( id: 'x', type: 'composite', label: 'X' ), null, '_p_x' );

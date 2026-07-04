@@ -109,7 +109,12 @@ final class OrderMetaRepositoryTest extends TestCase {
 	}
 
 	public function test_a_present_empty_value_is_not_treated_as_absent_via_post_meta(): void {
-		$post_id = \wp_insert_post( array( 'post_title' => 'Probe', 'post_status' => 'publish' ) );
+		$post_id = \wp_insert_post(
+			array(
+				'post_title'  => 'Probe',
+				'post_status' => 'publish',
+			)
+		);
 		\assert( \is_int( $post_id ) );
 		self::assertFalse( \wc_get_order( $post_id ) );
 		$repo = new OrderMetaRepository();
@@ -125,7 +130,12 @@ final class OrderMetaRepositoryTest extends TestCase {
 	}
 
 	public function test_crud_falls_back_to_post_meta_for_a_non_order_id(): void {
-		$post_id = \wp_insert_post( array( 'post_title' => 'Probe', 'post_status' => 'publish' ) );
+		$post_id = \wp_insert_post(
+			array(
+				'post_title'  => 'Probe',
+				'post_status' => 'publish',
+			)
+		);
 		\assert( \is_int( $post_id ) );
 		self::assertFalse( \wc_get_order( $post_id ) );
 		$repo = new OrderMetaRepository();
@@ -142,7 +152,12 @@ final class OrderMetaRepositoryTest extends TestCase {
 	}
 
 	public function test_the_post_meta_fallback_preserves_backslashes(): void {
-		$post_id = \wp_insert_post( array( 'post_title' => 'Probe', 'post_status' => 'publish' ) );
+		$post_id = \wp_insert_post(
+			array(
+				'post_title'  => 'Probe',
+				'post_status' => 'publish',
+			)
+		);
 		\assert( \is_int( $post_id ) );
 		self::assertFalse( \wc_get_order( $post_id ) );
 		$repo = new OrderMetaRepository();
@@ -155,7 +170,12 @@ final class OrderMetaRepositoryTest extends TestCase {
 	}
 
 	public function test_the_post_meta_fallback_preserves_a_backslash_in_the_meta_key(): void {
-		$post_id = \wp_insert_post( array( 'post_title' => 'Probe', 'post_status' => 'publish' ) );
+		$post_id = \wp_insert_post(
+			array(
+				'post_title'  => 'Probe',
+				'post_status' => 'publish',
+			)
+		);
 		\assert( \is_int( $post_id ) );
 		self::assertFalse( \wc_get_order( $post_id ) );
 		$repo = new OrderMetaRepository();
@@ -184,7 +204,14 @@ final class OrderMetaRepositoryTest extends TestCase {
 			},
 		);
 
-		$repo->apply( $this->order_id, array( 'a' => 'A', 'b' => 'B' ), array( 'old' ) );
+		$repo->apply(
+			$this->order_id,
+			array(
+				'a' => 'A',
+				'b' => 'B',
+			),
+			array( 'old' )
+		);
 
 		self::assertSame( 'A', $repo->get( $this->order_id, 'a' ) );
 		self::assertSame( 'B', $repo->get( $this->order_id, 'b' ) );
@@ -220,7 +247,12 @@ final class OrderMetaRepositoryTest extends TestCase {
 	}
 
 	public function test_apply_falls_back_to_post_meta_for_a_non_order_id(): void {
-		$post_id = \wp_insert_post( array( 'post_title' => 'Probe', 'post_status' => 'publish' ) );
+		$post_id = \wp_insert_post(
+			array(
+				'post_title'  => 'Probe',
+				'post_status' => 'publish',
+			)
+		);
 		\assert( \is_int( $post_id ) );
 		self::assertFalse( \wc_get_order( $post_id ) );
 		$repo = new OrderMetaRepository();

@@ -77,11 +77,25 @@ final class ProductDataFieldRendererTest extends TestCase {
 	}
 
 	public function test_a_select_carries_resolved_stringified_options(): void {
-		$field = new SettingsField( id: 'gw', type: 'select', label: 'Gateway', options: array( 'stripe' => 'Stripe', 1 => 100 ) );
+		$field = new SettingsField(
+			id: 'gw',
+			type: 'select',
+			label: 'Gateway',
+			options: array(
+				'stripe' => 'Stripe',
+				1        => 100,
+			)
+		);
 
 		$args = ( new ProductDataFieldRenderer() )->args( $field, FieldType::Select, 'stripe', 'gw' );
 
-		self::assertSame( array( 'stripe' => 'Stripe', 1 => '100' ), $args['options'] );
+		self::assertSame(
+			array(
+				'stripe' => 'Stripe',
+				1        => '100',
+			),
+			$args['options']
+		);
 		self::assertSame( 'stripe', $args['value'] );
 	}
 
@@ -94,13 +108,27 @@ final class ProductDataFieldRendererTest extends TestCase {
 	}
 
 	public function test_a_multiselect_appends_brackets_to_the_name_and_marks_it_multiple(): void {
-		$field = new SettingsField( id: 'tags', type: 'multiselect', label: 'Tags', options: array( 'a' => 'A', 'b' => 'B' ) );
+		$field = new SettingsField(
+			id: 'tags',
+			type: 'multiselect',
+			label: 'Tags',
+			options: array(
+				'a' => 'A',
+				'b' => 'B',
+			)
+		);
 
 		$args = ( new ProductDataFieldRenderer() )->args( $field, FieldType::Multiselect, array( 'a', 'b' ), '_p_tags' );
 
 		self::assertSame( '_p_tags[]', $args['name'] );
 		self::assertSame( array( 'a', 'b' ), $args['value'] );
-		self::assertSame( array( 'a' => 'A', 'b' => 'B' ), $args['options'] );
+		self::assertSame(
+			array(
+				'a' => 'A',
+				'b' => 'B',
+			),
+			$args['options']
+		);
 		self::assertSame( 'multiple', $args['custom_attributes']['multiple'] );
 	}
 
@@ -113,24 +141,61 @@ final class ProductDataFieldRendererTest extends TestCase {
 	}
 
 	public function test_a_radio_carries_options_and_value(): void {
-		$field = new SettingsField( id: 'size', type: 'radio', label: 'Size', options: array( 's' => 'Small', 'l' => 'Large' ) );
+		$field = new SettingsField(
+			id: 'size',
+			type: 'radio',
+			label: 'Size',
+			options: array(
+				's' => 'Small',
+				'l' => 'Large',
+			)
+		);
 
 		$args = ( new ProductDataFieldRenderer() )->args( $field, FieldType::Radio, 'l', 'size' );
 
-		self::assertSame( array( 's' => 'Small', 'l' => 'Large' ), $args['options'] );
+		self::assertSame(
+			array(
+				's' => 'Small',
+				'l' => 'Large',
+			),
+			$args['options']
+		);
 		self::assertSame( 'l', $args['value'] );
 	}
 
 	public function test_safe_custom_attributes_pass_through(): void {
-		$field = new SettingsField( id: 'qty', type: 'number', label: 'Qty', attributes: array( 'min' => '0', 'step' => '1' ) );
+		$field = new SettingsField(
+			id: 'qty',
+			type: 'number',
+			label: 'Qty',
+			attributes: array(
+				'min'  => '0',
+				'step' => '1',
+			)
+		);
 
 		$args = ( new ProductDataFieldRenderer() )->args( $field, FieldType::Number, 1, 'qty' );
 
-		self::assertSame( array( 'min' => '0', 'step' => '1' ), $args['custom_attributes'] );
+		self::assertSame(
+			array(
+				'min'  => '0',
+				'step' => '1',
+			),
+			$args['custom_attributes']
+		);
 	}
 
 	public function test_event_handler_attributes_are_filtered_out(): void {
-		$field = new SettingsField( id: 'x', type: 'text', label: 'X', attributes: array( 'onclick' => 'evil()', '1bad' => 'x', 'data-ok' => 'y' ) );
+		$field = new SettingsField(
+			id: 'x',
+			type: 'text',
+			label: 'X',
+			attributes: array(
+				'onclick' => 'evil()',
+				'1bad'    => 'x',
+				'data-ok' => 'y',
+			)
+		);
 
 		$args = ( new ProductDataFieldRenderer() )->args( $field, FieldType::Text, '', 'x' );
 

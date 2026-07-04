@@ -62,9 +62,9 @@ final class ProductDataFieldStoreTest extends TestCase {
 		if ( $product instanceof \WC_Product ) {
 			$product->delete( true );
 		}
-		$_POST                 = array();
-		$GLOBALS['thepostid']  = null;
-		$GLOBALS['post']       = null;
+		$_POST                = array();
+		$GLOBALS['thepostid'] = null;
+		$GLOBALS['post']      = null;
 
 		global $wp_filter;
 		foreach ( $this->saved_hooks as $hook => $saved ) {
@@ -192,7 +192,15 @@ final class ProductDataFieldStoreTest extends TestCase {
 		$store = new ProductDataFieldStore();
 		$store->register_tab(
 			$this->tab_with(
-				new SettingsField( id: 'warranty-type', type: 'select', label: 'Type', options: array( 'global' => 'Global', 'addon' => 'Add-on' ) ),
+				new SettingsField(
+					id: 'warranty-type',
+					type: 'select',
+					label: 'Type',
+					options: array(
+						'global' => 'Global',
+						'addon'  => 'Add-on',
+					)
+				),
 			),
 		);
 		$store->set( $this->product_id, 'general', 'warranty-type', 'global' );
@@ -217,7 +225,16 @@ final class ProductDataFieldStoreTest extends TestCase {
 		$store = new ProductDataFieldStore();
 		$store->register_tab(
 			$this->tab_with(
-				new SettingsField( id: 'locations', type: 'multiselect', label: 'Locations', options: array( 'cart' => 'Cart', 'checkout' => 'Checkout', 'email' => 'Email' ) ),
+				new SettingsField(
+					id: 'locations',
+					type: 'multiselect',
+					label: 'Locations',
+					options: array(
+						'cart'     => 'Cart',
+						'checkout' => 'Checkout',
+						'email'    => 'Email',
+					)
+				),
 			),
 		);
 
@@ -395,7 +412,11 @@ final class ProductDataFieldStoreTest extends TestCase {
 					type: 'multiselect',
 					label: 'Locations',
 					default_value: array( 'cart', 'email' ),
-					options: array( 'cart' => 'Cart', 'checkout' => 'Checkout', 'email' => 'Email' ),
+					options: array(
+						'cart'     => 'Cart',
+						'checkout' => 'Checkout',
+						'email'    => 'Email',
+					),
 				),
 			),
 		);
@@ -454,7 +475,12 @@ final class ProductDataFieldStoreTest extends TestCase {
 		// inject a product field's default into an unrelated post that happens to read the same meta key.
 		$store->register_tab( $this->tab( supports: static fn ( int $product_id ): bool => true ) );
 
-		$post_id = \wp_insert_post( array( 'post_title' => 'Page', 'post_status' => 'publish' ) );
+		$post_id = \wp_insert_post(
+			array(
+				'post_title'  => 'Page',
+				'post_status' => 'publish',
+			)
+		);
 		\assert( \is_int( $post_id ) );
 		self::assertFalse( \wc_get_product( $post_id ) );
 
@@ -719,7 +745,16 @@ final class ProductDataFieldStoreTest extends TestCase {
 					'general',
 					'General',
 					array(
-						new SettingsField( id: 'warranty-type', type: 'select', label: 'Type', default_value: 'global', options: array( 'global' => 'Global', 'addon' => 'Add-on' ) ),
+						new SettingsField(
+							id: 'warranty-type',
+							type: 'select',
+							label: 'Type',
+							default_value: 'global',
+							options: array(
+								'global' => 'Global',
+								'addon'  => 'Add-on',
+							)
+						),
 						new SettingsField( id: 'code', type: 'text', label: 'Code' ),
 					),
 				),

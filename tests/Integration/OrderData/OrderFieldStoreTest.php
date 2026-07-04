@@ -176,7 +176,7 @@ final class OrderFieldStoreTest extends TestCase {
 				$saved_for = $object_id;
 			},
 		);
-		$store = new OrderFieldStore();
+		$store     = new OrderFieldStore();
 		$store->register( $group, $this->placement() );
 		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
@@ -194,7 +194,10 @@ final class OrderFieldStoreTest extends TestCase {
 		$store = new OrderFieldStore();
 		$store->register( $this->group(), $this->placement() );
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'unlocked' => '1' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'unlocked' => '1' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 		self::assertTrue( $repo->has( $this->order_id, 'unlocked' ) );
 
@@ -208,7 +211,10 @@ final class OrderFieldStoreTest extends TestCase {
 		$group = $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) );
 		$store->register( $group, $this->placement() );
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'note' => 'hi' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'note' => 'hi' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
 		self::assertTrue( $store->has( $group, $this->order_id, 'note' ) );
@@ -229,7 +235,10 @@ final class OrderFieldStoreTest extends TestCase {
 		$store = new OrderFieldStore();
 		$store->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'note' => '0' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'note' => '0' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
 		self::assertTrue( $repo->has( $this->order_id, 'note' ) );
@@ -242,7 +251,10 @@ final class OrderFieldStoreTest extends TestCase {
 		$raw   = '<b>x</b>';
 		$store->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'note' => $raw ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'note' => $raw ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
 		self::assertSame( \sanitize_text_field( $raw ), $repo->get( $this->order_id, 'note' ) );
@@ -259,7 +271,10 @@ final class OrderFieldStoreTest extends TestCase {
 		);
 
 		$repo->set( $this->order_id, 'status', 'locked' );
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'status' => 'open' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'status' => 'open' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
 		self::assertSame( 'locked', $repo->get( $this->order_id, 'status' ) );
@@ -296,7 +311,10 @@ final class OrderFieldStoreTest extends TestCase {
 			$this->placement(),
 		);
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'unlocked' => '1' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'unlocked' => '1' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
 		self::assertTrue( $repo->has( $this->order_id, '_lpm_unlocked' ) );
@@ -305,7 +323,11 @@ final class OrderFieldStoreTest extends TestCase {
 
 	public function test_save_is_skipped_for_a_user_without_the_order_capability(): void {
 		$subscriber = \wp_insert_user(
-			array( 'user_login' => 'dws_sub_' . $this->order_id, 'user_pass' => 'x', 'role' => 'subscriber' ),
+			array(
+				'user_login' => 'dws_sub_' . $this->order_id,
+				'user_pass'  => 'x',
+				'role'       => 'subscriber',
+			),
 		);
 		\assert( \is_int( $subscriber ) );
 		\wp_set_current_user( $subscriber );
@@ -314,7 +336,10 @@ final class OrderFieldStoreTest extends TestCase {
 		$store = new OrderFieldStore();
 		$store->register( $this->group(), $this->placement() );
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'unlocked' => '1' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'unlocked' => '1' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 		self::assertFalse( $repo->has( $this->order_id, 'unlocked' ) );
 
@@ -328,7 +353,10 @@ final class OrderFieldStoreTest extends TestCase {
 		$store->register( $this->group(), $placement );
 
 		// The administrator passes the default order-edit gate but lacks the configured capability, so the save is refused.
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'unlocked' => '1' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'unlocked' => '1' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
 		self::assertFalse( $repo->has( $this->order_id, 'unlocked' ) );
@@ -339,7 +367,11 @@ final class OrderFieldStoreTest extends TestCase {
 		\set_current_screen( $screen );
 
 		$subscriber = \wp_insert_user(
-			array( 'user_login' => 'dws_sub_render_' . $this->order_id, 'user_pass' => 'x', 'role' => 'subscriber' ),
+			array(
+				'user_login' => 'dws_sub_render_' . $this->order_id,
+				'user_pass'  => 'x',
+				'role'       => 'subscriber',
+			),
 		);
 		\assert( \is_int( $subscriber ) );
 		\wp_set_current_user( $subscriber );
@@ -375,7 +407,13 @@ final class OrderFieldStoreTest extends TestCase {
 			},
 		);
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'first' => 'A', 'second' => 'B' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array(
+				'first'  => 'A',
+				'second' => 'B',
+			),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
 		self::assertSame( 'A', $repo->get( $this->order_id, 'first' ) );
@@ -416,7 +454,10 @@ final class OrderFieldStoreTest extends TestCase {
 			$this->placement(),
 		);
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'flag' => '1' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'flag' => '1' ),
+		);
 
 		$this->expectException( DuplicateSettingsFieldException::class );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
@@ -461,9 +502,9 @@ final class OrderFieldStoreTest extends TestCase {
 				),
 			),
 		);
-		$group = $this->group_with( new SettingsField( id: 'home_page', type: 'single_select_page', label: 'Home Page' ) );
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore(
+		$group        = $this->group_with( new SettingsField( id: 'home_page', type: 'single_select_page', label: 'Home Page' ) );
+		$repo         = new OrderMetaRepository();
+		$store        = new OrderFieldStore(
 			renderer: new FieldRenderer( custom_types: $custom_types ),
 			processor: new FieldProcessor( custom_types: $custom_types ),
 		);
@@ -474,7 +515,10 @@ final class OrderFieldStoreTest extends TestCase {
 		self::assertStringContainsString( 'class="dws-page-select"', $html );
 		self::assertStringContainsString( 'name="dws_unlock[home_page]"', $html );
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'home_page' => '42' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'home_page' => '42' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
 		self::assertSame( '42', $repo->get( $this->order_id, 'home_page' ) );
@@ -491,11 +535,17 @@ final class OrderFieldStoreTest extends TestCase {
 			$this->placement(),
 		);
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'note' => 'typed' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'note' => 'typed' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 		self::assertSame( 'typed', $repo->get( $this->order_id, 'note' ) );
 
-		$_POST = array( $this->nonce_name() => $this->nonce(), self::GROUP_ID => array( 'note' => '' ) );
+		$_POST = array(
+			$this->nonce_name() => $this->nonce(),
+			self::GROUP_ID      => array( 'note' => '' ),
+		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 		self::assertFalse( $repo->has( $this->order_id, 'note' ) );
 
