@@ -149,6 +149,19 @@ final class OrderFieldStoreTest extends TestCase {
 		self::assertStringContainsString( 'name="dws_unlock[unlocked]"', $html );
 	}
 
+	public function test_the_box_row_binds_the_label_to_the_control_id(): void {
+		$screen = $this->order_screen();
+		\set_current_screen( $screen );
+
+		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
+
+		$html = $this->render_box( $screen );
+
+		self::assertStringContainsString( '<div class="dws-meta-box-field"><label for="dws_unlock.unlocked">Unlocked</label><br />', $html );
+		self::assertStringContainsString( 'id="dws_unlock.unlocked"', $html );
+	}
+
 	public function test_a_bespoke_render_and_save_group_emits_the_nonce_and_saves(): void {
 		$screen = $this->order_screen();
 		\set_current_screen( $screen );
