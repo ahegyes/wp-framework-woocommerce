@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( SettingsSection::class )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_checkbox_checked' )]
-#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Shared\Identifier\is_valid_identifier' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\stringify_for_output' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\WooCommerce\to_yes_no' )]
 final class WCSettingsBuilderTest extends TestCase {

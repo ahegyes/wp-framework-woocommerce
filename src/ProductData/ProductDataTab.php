@@ -5,8 +5,8 @@ namespace DeepWebSolutions\Framework\WooCommerce\ProductData;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
 
-use function DeepWebSolutions\Framework\Settings\Schema\is_valid_global_name_prefix;
-use function DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier;
+use function DeepWebSolutions\Framework\Shared\Identifier\is_valid_global_name_prefix;
+use function DeepWebSolutions\Framework\Shared\Identifier\is_valid_identifier;
 
 /**
  * Declarative description of a WooCommerce product-data settings tab — a custom panel in the product

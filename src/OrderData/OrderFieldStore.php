@@ -4,7 +4,6 @@ namespace DeepWebSolutions\Framework\WooCommerce\OrderData;
 
 use Automattic\WooCommerce\Utilities\OrderUtil;
 use DeepWebSolutions\Framework\Settings\MetaField\ObjectFieldForm;
-use DeepWebSolutions\Framework\Settings\MetaField\ObjectMetaRepositoryInterface;
 use DeepWebSolutions\Framework\Settings\MetaField\ValueObjects\FieldGroup;
 use DeepWebSolutions\Framework\Settings\MetaField\ValueObjects\MetaBoxPlacement;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
@@ -12,6 +11,7 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldEx
 use DeepWebSolutions\Framework\Settings\Schema\Field\FieldProcessor;
 use DeepWebSolutions\Framework\Settings\Schema\Field\FieldRenderer;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Storage\ObjectMeta\ObjectMetaRepositoryInterface;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\Exceptions\UnsupportedOrderScreenException;
 
 use function DeepWebSolutions\Framework\Settings\Schema\field_label_html;

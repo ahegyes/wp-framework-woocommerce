@@ -2,7 +2,7 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration\OrderData;
 
-use DeepWebSolutions\Framework\Settings\MetaField\ObjectMetaRepositoryInterface;
+use DeepWebSolutions\Framework\Storage\ObjectMeta\ObjectMetaRepositoryInterface;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderMetaRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;

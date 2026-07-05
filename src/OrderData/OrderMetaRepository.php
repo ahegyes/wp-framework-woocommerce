@@ -2,7 +2,7 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\OrderData;
 
-use DeepWebSolutions\Framework\Settings\MetaField\ObjectMetaRepositoryInterface;
+use DeepWebSolutions\Framework\Storage\ObjectMeta\ObjectMetaRepositoryInterface;
 
 /**
  * Object-meta repository over WooCommerce orders.

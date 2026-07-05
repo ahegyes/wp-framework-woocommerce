@@ -21,6 +21,7 @@
     "ahegyes/wp-framework-core": "^2.0@dev",
     "ahegyes/wp-framework-settings": "^2.0@dev",
     "ahegyes/wp-framework-shared": "^2.0@dev",
+    "ahegyes/wp-framework-storage": "^2.0@dev",
     "psr/log": "^3"
   },
 

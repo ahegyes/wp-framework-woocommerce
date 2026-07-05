@@ -15,8 +15,8 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass( ProductDataTab::class )]
 #[UsesClass( SettingsField::class )]
 #[UsesClass( SettingsSection::class )]
-#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier' )]
-#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_global_name_prefix' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Shared\Identifier\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Shared\Identifier\is_valid_global_name_prefix' )]
 final class ProductDataTabTest extends TestCase {
 	public function test_minimal_construction_exposes_defaults(): void {
 		$tab = new ProductDataTab( slug: 'dws_warranty', label: 'Warranty', meta_key_prefix: '_dws-wrwc_', sections: array() );

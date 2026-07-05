@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( SettingsField::class )]
 #[UsesClass( SettingsSection::class )]
 #[UsesClass( SettingsPage::class )]
-#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Shared\Identifier\is_valid_identifier' )]
 final class WooCommerceSettingsBackendTest extends TestCase {
 	public function test_option_keys_derives_one_prefixed_key_per_field_across_sections_in_declaration_order(): void {
 		$page = new SettingsPage(
