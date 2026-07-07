@@ -1,6 +1,6 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce\Tests\Unit;
+namespace DeepWebSolutions\Framework\WooCommerce\Tests\Unit\ProductData;
 
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\UnknownFieldTypeException;
 use DeepWebSolutions\Framework\Settings\Schema\Field\FieldType;

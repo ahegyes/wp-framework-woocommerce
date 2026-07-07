@@ -2,34 +2,24 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration\OrderData;
 
+use DeepWebSolutions\Framework\Settings\Tests\Support\IsolatesHooks;
 use DeepWebSolutions\Framework\Storage\ObjectMeta\ObjectMetaRepositoryInterface;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderMetaRepository;
+use DeepWebSolutions\Framework\WooCommerce\Tests\Support\RequiresWooCommerce;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass( OrderMetaRepository::class )]
 final class OrderMetaRepositoryTest extends TestCase {
-	private const ISOLATED_HOOKS = array( 'woocommerce_after_order_object_save' );
+	use IsolatesHooks;
+	use RequiresWooCommerce;
+
+	protected const ISOLATED_HOOKS = array( 'woocommerce_after_order_object_save' );
 
 	private int $order_id = 0;
 
-	/**
-	 * @var array<string, mixed>
-	 */
-	private array $saved_hooks = array();
-
 	protected function setUp(): void {
 		parent::setUp();
-
-		if ( ! \function_exists( 'wc_create_order' ) ) {
-			self::markTestSkipped( 'WooCommerce is not active.' );
-		}
-
-		global $wp_filter;
-		foreach ( self::ISOLATED_HOOKS as $hook ) {
-			$this->saved_hooks[ $hook ] = $wp_filter[ $hook ] ?? null;
-			unset( $wp_filter[ $hook ] );
-		}
 
 		$order = \wc_create_order();
 		\assert( $order instanceof \WC_Order );
@@ -40,15 +30,6 @@ final class OrderMetaRepositoryTest extends TestCase {
 		$order = \wc_get_order( $this->order_id );
 		if ( $order instanceof \WC_Order ) {
 			$order->delete( true );
-		}
-
-		global $wp_filter;
-		foreach ( $this->saved_hooks as $hook => $saved ) {
-			if ( null !== $saved ) {
-				$wp_filter[ $hook ] = $saved;
-			} else {
-				unset( $wp_filter[ $hook ] );
-			}
 		}
 
 		parent::tearDown();

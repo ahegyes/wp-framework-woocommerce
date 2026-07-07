@@ -13,9 +13,11 @@ use DeepWebSolutions\Framework\Settings\Schema\Field\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\CustomFieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
+use DeepWebSolutions\Framework\Settings\Tests\Support\IsolatesHooks;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\Exceptions\UnsupportedOrderScreenException;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderFieldSurface;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderMetaRepository;
+use DeepWebSolutions\Framework\WooCommerce\Tests\Support\RequiresWooCommerce;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -32,9 +34,12 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( FieldType::class )]
 #[UsesClass( CustomFieldType::class )]
 final class OrderFieldSurfaceTest extends TestCase {
+	use IsolatesHooks;
+	use RequiresWooCommerce;
+
 	private const GROUP_ID = 'dws_unlock';
 
-	private const ISOLATED_HOOKS = array(
+	protected const ISOLATED_HOOKS = array(
 		'woocommerce_process_shop_order_meta',
 		'woocommerce_after_order_object_save',
 		'add_meta_boxes_woocommerce_page_wc-orders',
@@ -44,17 +49,8 @@ final class OrderFieldSurfaceTest extends TestCase {
 
 	private int $order_id = 0;
 
-	/**
-	 * @var array<string, mixed>
-	 */
-	private array $saved_hooks = array();
-
 	protected function setUp(): void {
 		parent::setUp();
-
-		if ( ! \function_exists( 'wc_create_order' ) ) {
-			self::markTestSkipped( 'WooCommerce is not active.' );
-		}
 
 		require_once ABSPATH . 'wp-admin/includes/template.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
@@ -62,12 +58,6 @@ final class OrderFieldSurfaceTest extends TestCase {
 		require_once ABSPATH . 'wp-admin/includes/user.php';
 
 		\wp_set_current_user( 1 );
-
-		global $wp_filter;
-		foreach ( self::ISOLATED_HOOKS as $hook ) {
-			$this->saved_hooks[ $hook ] = $wp_filter[ $hook ] ?? null;
-			unset( $wp_filter[ $hook ] );
-		}
 
 		$GLOBALS['wp_meta_boxes'] = array();
 		$_POST                    = array();
@@ -87,15 +77,6 @@ final class OrderFieldSurfaceTest extends TestCase {
 		}
 		$_POST                     = array();
 		$GLOBALS['current_screen'] = null;
-
-		global $wp_filter;
-		foreach ( $this->saved_hooks as $hook => $saved ) {
-			if ( null !== $saved ) {
-				$wp_filter[ $hook ] = $saved;
-			} else {
-				unset( $wp_filter[ $hook ] );
-			}
-		}
 
 		parent::tearDown();
 	}
@@ -176,8 +157,8 @@ final class OrderFieldSurfaceTest extends TestCase {
 				$saved_for = $object_id;
 			},
 		);
-		$store     = new OrderFieldSurface();
-		$store->register( $group, $this->placement() );
+		$surface   = new OrderFieldSurface();
+		$surface->register( $group, $this->placement() );
 		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
 		$html = $this->render_box( $screen );
@@ -190,9 +171,9 @@ final class OrderFieldSurfaceTest extends TestCase {
 	}
 
 	public function test_a_truthy_submission_is_stored_and_a_falsy_one_deletes_the_meta(): void {
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldSurface();
-		$store->register( $this->group(), $this->placement() );
+		$repo    = new OrderMetaRepository();
+		$surface = new OrderFieldSurface();
+		$surface->register( $this->group(), $this->placement() );
 
 		$_POST = array(
 			$this->nonce_name() => $this->nonce(),
@@ -207,9 +188,9 @@ final class OrderFieldSurfaceTest extends TestCase {
 	}
 
 	public function test_crud_addresses_the_same_meta_key_the_form_save_writes(): void {
-		$store = new OrderFieldSurface();
-		$group = $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) );
-		$store->register( $group, $this->placement() );
+		$surface = new OrderFieldSurface();
+		$group   = $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) );
+		$surface->register( $group, $this->placement() );
 
 		$_POST = array(
 			$this->nonce_name() => $this->nonce(),
@@ -217,23 +198,23 @@ final class OrderFieldSurfaceTest extends TestCase {
 		);
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
 
-		self::assertTrue( $store->has( $group, $this->order_id, 'note' ) );
-		self::assertSame( 'hi', $store->get( $group, $this->order_id, 'note' ) );
+		self::assertTrue( $surface->has( $group, $this->order_id, 'note' ) );
+		self::assertSame( 'hi', $surface->get( $group, $this->order_id, 'note' ) );
 
-		$store->set( $group, $this->order_id, 'note', 'bye' );
+		$surface->set( $group, $this->order_id, 'note', 'bye' );
 		$order = \wc_get_order( $this->order_id );
 		\assert( $order instanceof \WC_Abstract_Order );
 		self::assertSame( 'bye', $order->get_meta( 'note', true ) );
 
-		self::assertTrue( $store->delete( $group, $this->order_id, 'note' ) );
+		self::assertTrue( $surface->delete( $group, $this->order_id, 'note' ) );
 		self::assertFalse( ( new OrderMetaRepository() )->has( $this->order_id, 'note' ) );
-		self::assertSame( array( 'note' ), $store->meta_keys( $group ) );
+		self::assertSame( array( 'note' ), $surface->meta_keys( $group ) );
 	}
 
 	public function test_a_zero_value_is_stored_not_revoked(): void {
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldSurface();
-		$store->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
+		$repo    = new OrderMetaRepository();
+		$surface = new OrderFieldSurface();
+		$surface->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
 
 		$_POST = array(
 			$this->nonce_name() => $this->nonce(),
@@ -246,10 +227,10 @@ final class OrderFieldSurfaceTest extends TestCase {
 	}
 
 	public function test_save_applies_the_builtin_default_sanitizer(): void {
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldSurface();
-		$raw   = '<b>x</b>';
-		$store->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
+		$repo    = new OrderMetaRepository();
+		$surface = new OrderFieldSurface();
+		$raw     = '<b>x</b>';
+		$surface->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
 
 		$_POST = array(
 			$this->nonce_name() => $this->nonce(),
@@ -261,9 +242,9 @@ final class OrderFieldSurfaceTest extends TestCase {
 	}
 
 	public function test_save_preserves_an_existing_value_when_a_present_submission_is_invalid(): void {
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldSurface();
-		$store->register(
+		$repo    = new OrderMetaRepository();
+		$surface = new OrderFieldSurface();
+		$surface->register(
 			$this->group_with(
 				new SettingsField( id: 'status', type: 'select', label: 'Status', options: array( 'locked' => 'Locked' ) ),
 			),
@@ -281,9 +262,9 @@ final class OrderFieldSurfaceTest extends TestCase {
 	}
 
 	public function test_save_is_skipped_without_a_valid_nonce(): void {
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldSurface();
-		$store->register( $this->group(), $this->placement() );
+		$repo    = new OrderMetaRepository();
+		$surface = new OrderFieldSurface();
+		$surface->register( $this->group(), $this->placement() );
 
 		$_POST = array( self::GROUP_ID => array( 'unlocked' => '1' ) );
 		\do_action( 'woocommerce_process_shop_order_meta', $this->order_id );
@@ -304,9 +285,9 @@ final class OrderFieldSurfaceTest extends TestCase {
 	}
 
 	public function test_a_field_meta_key_overrides_the_id_for_storage(): void {
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldSurface();
-		$store->register(
+		$repo    = new OrderMetaRepository();
+		$surface = new OrderFieldSurface();
+		$surface->register(
 			$this->group_with( new SettingsField( id: 'unlocked', type: 'checkbox', label: 'Unlocked', meta_key: '_lpm_unlocked' ) ),
 			$this->placement(),
 		);
@@ -332,9 +313,9 @@ final class OrderFieldSurfaceTest extends TestCase {
 		\assert( \is_int( $subscriber ) );
 		\wp_set_current_user( $subscriber );
 
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldSurface();
-		$store->register( $this->group(), $this->placement() );
+		$repo    = new OrderMetaRepository();
+		$surface = new OrderFieldSurface();
+		$surface->register( $this->group(), $this->placement() );
 
 		$_POST = array(
 			$this->nonce_name() => $this->nonce(),
@@ -349,8 +330,8 @@ final class OrderFieldSurfaceTest extends TestCase {
 	public function test_a_configured_box_capability_overrides_the_default(): void {
 		$repo      = new OrderMetaRepository();
 		$placement = new MetaBoxPlacement( screen: 'shop_order', context: 'side', priority: 'default', capability: 'dws_nonexistent_cap' );
-		$store     = new OrderFieldSurface();
-		$store->register( $this->group(), $placement );
+		$surface   = new OrderFieldSurface();
+		$surface->register( $this->group(), $placement );
 
 		// The administrator passes the default order-edit gate but lacks the configured capability, so the save is refused.
 		$_POST = array(
@@ -385,9 +366,9 @@ final class OrderFieldSurfaceTest extends TestCase {
 	}
 
 	public function test_a_multi_field_save_persists_the_order_once(): void {
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldSurface();
-		$store->register(
+		$repo    = new OrderMetaRepository();
+		$surface = new OrderFieldSurface();
+		$surface->register(
 			new FieldGroup(
 				id: self::GROUP_ID,
 				title: 'Multi',
@@ -422,8 +403,8 @@ final class OrderFieldSurfaceTest extends TestCase {
 	}
 
 	public function test_a_no_op_save_does_not_persist_the_order(): void {
-		$store = new OrderFieldSurface();
-		$store->register( $this->group(), $this->placement() );
+		$surface = new OrderFieldSurface();
+		$surface->register( $this->group(), $this->placement() );
 
 		$saves = 0;
 		\add_action(
@@ -441,8 +422,8 @@ final class OrderFieldSurfaceTest extends TestCase {
 	}
 
 	public function test_a_duplicate_field_id_in_a_group_is_rejected(): void {
-		$store = new OrderFieldSurface();
-		$store->register(
+		$surface = new OrderFieldSurface();
+		$surface->register(
 			new FieldGroup(
 				id: self::GROUP_ID,
 				title: 'Dup',
@@ -504,11 +485,11 @@ final class OrderFieldSurfaceTest extends TestCase {
 		);
 		$group        = $this->group_with( new SettingsField( id: 'home_page', type: 'single_select_page', label: 'Home Page' ) );
 		$repo         = new OrderMetaRepository();
-		$store        = new OrderFieldSurface(
+		$surface      = new OrderFieldSurface(
 			renderer: new FieldRenderer( custom_types: $custom_types ),
 			processor: new FieldProcessor( custom_types: $custom_types ),
 		);
-		$store->register( $group, $this->placement() );
+		$surface->register( $group, $this->placement() );
 
 		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 		$html = $this->render_box( $screen );
@@ -528,9 +509,9 @@ final class OrderFieldSurfaceTest extends TestCase {
 		$screen = $this->order_screen();
 		\set_current_screen( $screen );
 
-		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldSurface();
-		$store->register(
+		$repo    = new OrderMetaRepository();
+		$surface = new OrderFieldSurface();
+		$surface->register(
 			$this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note', default_value: 'preset' ) ),
 			$this->placement(),
 		);

@@ -1,11 +1,12 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration;
+namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration\ProductData;
 
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\UnknownFieldTypeException;
 use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldRenderer;
+use DeepWebSolutions\Framework\WooCommerce\Tests\Support\RequiresWooCommerce;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -14,17 +15,12 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( SettingsField::class )]
 #[UsesClass( OptionsResolver::class )]
 final class ProductDataFieldRendererTest extends TestCase {
+	use RequiresWooCommerce;
+
 	private int $product_id = 0;
 
 	protected function setUp(): void {
 		parent::setUp();
-
-		if ( ! \function_exists( 'wc_get_product' ) ) {
-			self::markTestSkipped( 'WooCommerce is not active.' );
-		}
-		if ( ! \function_exists( 'woocommerce_wp_text_input' ) ) {
-			require_once WP_PLUGIN_DIR . '/woocommerce/includes/admin/wc-meta-box-functions.php';
-		}
 
 		$product = new \WC_Product_Simple();
 		$product->set_name( 'Probe' );
