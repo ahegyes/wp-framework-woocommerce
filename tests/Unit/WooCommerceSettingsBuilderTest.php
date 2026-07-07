@@ -361,11 +361,14 @@ final class WooCommerceSettingsBuilderTest extends TestCase {
 	}
 
 	public function test_a_page_without_sections_builds_an_empty_array(): void {
+		// A sectionless page is a real derived shape: the editable-page projection drops every section the
+		// current user cannot edit, and the builder must degrade to an empty settings array, not fatal.
 		$page = new SettingsPage(
 			slug: 'dws-shop',
 			page_title: 'DWS Shop',
 			menu_title: 'DWS Shop',
 			capability: 'manage_woocommerce',
+			sections: array(),
 		);
 
 		self::assertSame( array(), ( new WooCommerceSettingsBuilder() )->build( $page ) );

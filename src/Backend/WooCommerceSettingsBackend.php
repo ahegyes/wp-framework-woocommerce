@@ -6,6 +6,7 @@ use DeepWebSolutions\Framework\Settings\Backend\SettingsBackendInterface;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsSectionException;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsPageException;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnsupportedSettingsPageCapabilityException;
@@ -87,6 +88,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
+	 * @throws  InvalidSettingsPageException If the page declares no sections.
 	 * @throws  DuplicateSettingsSectionException If two sections on the page share an id.
 	 * @throws  DuplicateSettingsFieldException If two fields on the page share an id.
 	 * @throws  UnsupportedSettingsPageCapabilityException If the page capability differs from WooCommerce's settings capability.
@@ -94,6 +96,13 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	#[\Override]
 	public function register_page( SettingsPage $page ): void {
 		$this->assert_supported_page_capability( $page );
+
+		// The authoring-time seam: a registered page with zero sections is a permanently blank settings
+		// tab, while the render-time capability projection may legitimately empty a page per user.
+		if ( array() === $page->sections ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
+			throw new InvalidSettingsPageException( "Settings page '$page->slug' declares no sections; a registered page must carry at least one section to render." );
+		}
 
 		$this->page   = $page;
 		$this->fields = $this->map_fields( $page );

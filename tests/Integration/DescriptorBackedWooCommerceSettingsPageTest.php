@@ -47,7 +47,7 @@ final class DescriptorBackedWooCommerceSettingsPageTest extends TestCase {
 	public function test_falls_back_to_the_slug_when_the_descriptor_has_no_location(): void {
 		DescriptorBackedWooCommerceSettingsPage::bind(
 			FooWooCommerceSettingsPage::class,
-			new SettingsPage( slug: 'dws-foo', page_title: 'Foo', menu_title: 'Foo', capability: 'manage_woocommerce' ),
+			new SettingsPage( slug: 'dws-foo', page_title: 'Foo', menu_title: 'Foo', capability: 'manage_woocommerce', sections: array() ),
 		);
 
 		self::assertSame( 'dws-foo', ( new FooWooCommerceSettingsPage() )->get_id() );
@@ -56,7 +56,7 @@ final class DescriptorBackedWooCommerceSettingsPageTest extends TestCase {
 	public function test_the_tab_id_is_sanitized_for_woocommerce_routing(): void {
 		DescriptorBackedWooCommerceSettingsPage::bind(
 			FooWooCommerceSettingsPage::class,
-			new SettingsPage( slug: 'dws-foo', page_title: 'Foo', menu_title: 'Foo', capability: 'manage_woocommerce', location: 'DWS Foo' ),
+			new SettingsPage( slug: 'dws-foo', page_title: 'Foo', menu_title: 'Foo', capability: 'manage_woocommerce', sections: array(), location: 'DWS Foo' ),
 		);
 
 		// WooCommerce routes the settings screen by sanitize_title($_GET['tab']) but the page registers its
