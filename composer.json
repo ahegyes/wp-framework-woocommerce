@@ -1,6 +1,6 @@
 {
   "name": "ahegyes/wp-framework-woocommerce",
-  "description": "WooCommerce settings backend and WC-aware helpers for plugins built on the DWS framework.",
+  "description": "WooCommerce settings backend, product-data and order-data fields, version and database-version conditionals, and a PSR-3 logger for plugins built on the DWS framework.",
   "type": "library",
   "license": "GPL-2.0-or-later",
   "homepage": "https://github.com/ahegyes/wordpress-framework",
@@ -10,7 +10,7 @@
       "homepage": "https://github.com/ahegyes/wordpress-framework/graphs/contributors"
     }
   ],
-  "keywords": ["wordpress", "wordpress-plugin", "woocommerce", "framework"],
+  "keywords": ["wordpress", "wordpress-plugin", "framework", "woocommerce", "settings", "product-data", "order-data", "conditionals", "logging"],
   "support": {
     "issues": "https://github.com/ahegyes/wordpress-framework/issues",
     "source": "https://github.com/ahegyes/wordpress-framework"
