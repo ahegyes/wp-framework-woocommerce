@@ -23,7 +23,7 @@ use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
  * @since   2.0.0
  * @version 2.0.0
  */
-final readonly class WCSettingsBuilder {
+final readonly class WooCommerceSettingsBuilder {
 	// region MAGIC METHODS
 
 	/**

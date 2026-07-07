@@ -10,14 +10,14 @@ use DeepWebSolutions\Framework\Settings\Schema\Field\FieldRenderer;
 use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Storage\ObjectMeta\ObjectMetaRepositoryInterface;
-use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderFieldStore;
+use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderFieldSurface;
 use DeepWebSolutions\Framework\WooCommerce\Tests\Fixtures\InMemoryObjectMetaRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\Attributes\UsesFunction;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass( OrderFieldStore::class )]
+#[CoversClass( OrderFieldSurface::class )]
 #[UsesClass( ObjectFieldForm::class )]
 #[UsesClass( FieldGroup::class )]
 #[UsesClass( SettingsField::class )]
@@ -28,15 +28,15 @@ use PHPUnit\Framework\TestCase;
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_checkbox_checked' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\normalize_checkbox_value' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\wordpress_field_type_sanitizers' )]
-final class OrderFieldStoreTest extends TestCase {
+final class OrderFieldSurfaceTest extends TestCase {
 	private ObjectMetaRepositoryInterface $repository;
-	private OrderFieldStore $store;
+	private OrderFieldSurface $store;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->repository = new InMemoryObjectMetaRepository();
-		$this->store      = new OrderFieldStore( repository: $this->repository );
+		$this->store      = new OrderFieldSurface( repository: $this->repository );
 	}
 
 	public function test_a_value_round_trips_under_the_resolved_storage_key(): void {

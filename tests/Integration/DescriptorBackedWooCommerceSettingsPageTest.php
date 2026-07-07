@@ -7,16 +7,16 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsSection
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
-use DeepWebSolutions\Framework\WooCommerce\Backend\DescriptorBackedWCSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Backend\DescriptorBackedWooCommerceSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnboundSettingsPageException;
-use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\BarWCSettingsPage;
-use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\FooWCSettingsPage;
-use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\UnboundWCSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\BarWooCommerceSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\FooWooCommerceSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\UnboundWooCommerceSettingsPage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass( DescriptorBackedWCSettingsPage::class )]
-final class DescriptorBackedWCSettingsPageTest extends TestCase {
+#[CoversClass( DescriptorBackedWooCommerceSettingsPage::class )]
+final class DescriptorBackedWooCommerceSettingsPageTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -29,45 +29,45 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 	protected function tearDown(): void {
 		// The static descriptor map persists across the process; clear it so a class bound in one test
 		// cannot leak into another (e.g. silently satisfying the unbound-instantiation guard test).
-		$descriptors = new \ReflectionProperty( DescriptorBackedWCSettingsPage::class, 'descriptors' );
+		$descriptors = new \ReflectionProperty( DescriptorBackedWooCommerceSettingsPage::class, 'descriptors' );
 		$descriptors->setValue( null, array() );
 
 		parent::tearDown();
 	}
 
 	public function test_recovers_its_descriptor_id_and_label_from_the_static_map(): void {
-		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
+		DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
 
-		$page = new FooWCSettingsPage();
+		$page = new FooWooCommerceSettingsPage();
 
 		self::assertSame( 'dws_foo', $page->get_id() );
 		self::assertSame( 'Foo', $page->get_label() );
 	}
 
 	public function test_falls_back_to_the_slug_when_the_descriptor_has_no_location(): void {
-		DescriptorBackedWCSettingsPage::bind(
-			FooWCSettingsPage::class,
+		DescriptorBackedWooCommerceSettingsPage::bind(
+			FooWooCommerceSettingsPage::class,
 			new SettingsPage( slug: 'dws-foo', page_title: 'Foo', menu_title: 'Foo', capability: 'manage_woocommerce' ),
 		);
 
-		self::assertSame( 'dws-foo', ( new FooWCSettingsPage() )->get_id() );
+		self::assertSame( 'dws-foo', ( new FooWooCommerceSettingsPage() )->get_id() );
 	}
 
 	public function test_the_tab_id_is_sanitized_for_woocommerce_routing(): void {
-		DescriptorBackedWCSettingsPage::bind(
-			FooWCSettingsPage::class,
+		DescriptorBackedWooCommerceSettingsPage::bind(
+			FooWooCommerceSettingsPage::class,
 			new SettingsPage( slug: 'dws-foo', page_title: 'Foo', menu_title: 'Foo', capability: 'manage_woocommerce', location: 'DWS Foo' ),
 		);
 
 		// WooCommerce routes the settings screen by sanitize_title($_GET['tab']) but the page registers its
 		// output/save hooks against $this->id, so a non-slug-stable id neither renders nor saves.
-		self::assertSame( 'dws-foo', ( new FooWCSettingsPage() )->get_id() );
+		self::assertSame( 'dws-foo', ( new FooWooCommerceSettingsPage() )->get_id() );
 	}
 
 	public function test_builds_its_section_settings_from_the_descriptor(): void {
-		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
+		DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
 
-		$settings = ( new FooWCSettingsPage() )->get_settings_for_section( '' );
+		$settings = ( new FooWooCommerceSettingsPage() )->get_settings_for_section( '' );
 		$ids      = \array_column( $settings, 'id' );
 
 		self::assertContains( 'dws-foo_general', $ids );
@@ -75,10 +75,10 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 	}
 
 	public function test_maps_the_first_section_to_the_default_and_later_sections_to_their_slug(): void {
-		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->multi_section_page() );
+		DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $this->multi_section_page() );
 
 		// get_sections() (public) returns the filtered get_own_sections() map.
-		$sections = ( new FooWCSettingsPage() )->get_sections();
+		$sections = ( new FooWooCommerceSettingsPage() )->get_sections();
 
 		self::assertSame( 'General', $sections[''] ?? null );
 		self::assertSame( 'Advanced', $sections['advanced'] ?? null );
@@ -86,9 +86,9 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 	}
 
 	public function test_routes_a_later_section_to_its_own_fields(): void {
-		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->multi_section_page() );
+		DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $this->multi_section_page() );
 
-		$settings = ( new FooWCSettingsPage() )->get_settings_for_section( 'advanced' );
+		$settings = ( new FooWooCommerceSettingsPage() )->get_settings_for_section( 'advanced' );
 		$ids      = \array_column( $settings, 'id' );
 
 		self::assertContains( 'dws-foo_advanced', $ids );
@@ -97,9 +97,9 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 	}
 
 	public function test_routes_a_later_section_by_woocommerces_sanitized_section_id(): void {
-		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->unstable_section_page() );
+		DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $this->unstable_section_page() );
 
-		$page     = new FooWCSettingsPage();
+		$page     = new FooWooCommerceSettingsPage();
 		$sections = $page->get_sections();
 		$settings = $page->get_settings_for_section( 'advanced' );
 		$ids      = \array_column( $settings, 'id' );
@@ -110,19 +110,19 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 	}
 
 	public function test_two_distinct_subclasses_recover_their_own_descriptors(): void {
-		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
-		DescriptorBackedWCSettingsPage::bind( BarWCSettingsPage::class, $this->page( 'dws-bar', 'dws_bar', 'Bar' ) );
+		DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
+		DescriptorBackedWooCommerceSettingsPage::bind( BarWooCommerceSettingsPage::class, $this->page( 'dws-bar', 'dws_bar', 'Bar' ) );
 
-		self::assertSame( 'dws_foo', ( new FooWCSettingsPage() )->get_id() );
-		self::assertSame( 'dws_bar', ( new BarWCSettingsPage() )->get_id() );
+		self::assertSame( 'dws_foo', ( new FooWooCommerceSettingsPage() )->get_id() );
+		self::assertSame( 'dws_bar', ( new BarWooCommerceSettingsPage() )->get_id() );
 	}
 
 	public function test_a_rebuilt_instance_recovers_the_same_descriptor(): void {
-		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
+		DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $this->page( 'dws-foo', 'dws_foo', 'Foo' ) );
 
 		// WooCommerce rebuilds the page object on each request; a fresh instance must still resolve its descriptor.
-		$first  = new FooWCSettingsPage();
-		$second = new FooWCSettingsPage();
+		$first  = new FooWooCommerceSettingsPage();
+		$second = new FooWooCommerceSettingsPage();
 
 		self::assertSame( $first->get_id(), $second->get_id() );
 		self::assertSame( 'Foo', $second->get_label() );
@@ -131,13 +131,13 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 	public function test_instantiating_an_unbound_page_class_throws(): void {
 		$this->expectException( UnboundSettingsPageException::class );
 
-		new UnboundWCSettingsPage();
+		new UnboundWooCommerceSettingsPage();
 	}
 
 	public function test_the_first_section_matches_only_the_default_token(): void {
-		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->multi_section_page() );
+		DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $this->multi_section_page() );
 
-		$page = new FooWCSettingsPage();
+		$page = new FooWooCommerceSettingsPage();
 
 		// The first section's fields answer to WooCommerce's default token, not to the
 		// section's own sanitized id — otherwise it could shadow a later section.
@@ -174,7 +174,7 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 		$this->expectException( DuplicateSettingsSectionException::class );
 		$this->expectExceptionMessage( 'advanced' );
 
-		DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $page );
+		DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $page );
 	}
 
 	public function test_binding_a_section_whose_id_sanitizes_to_the_default_token_throws(): void {
@@ -186,7 +186,7 @@ final class DescriptorBackedWCSettingsPageTest extends TestCase {
 		try {
 			$this->expectException( InvalidSettingsSectionException::class );
 
-			DescriptorBackedWCSettingsPage::bind( FooWCSettingsPage::class, $this->multi_section_page() );
+			DescriptorBackedWooCommerceSettingsPage::bind( FooWooCommerceSettingsPage::class, $this->multi_section_page() );
 		} finally {
 			\remove_filter( 'sanitize_title', $force_empty );
 		}

@@ -21,7 +21,7 @@ use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_cur
  * @since   2.0.0
  * @version 2.0.0
  */
-abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
+abstract class DescriptorBackedWooCommerceSettingsPage extends \WC_Settings_Page {
 	// region FIELDS AND CONSTANTS
 
 	/**
@@ -83,7 +83,7 @@ abstract class DescriptorBackedWCSettingsPage extends \WC_Settings_Page {
 			return array();
 		}
 
-		return ( new WCSettingsBuilder() )->build_section( $page, $section );
+		return ( new WooCommerceSettingsBuilder() )->build_section( $page, $section );
 	}
 
 	/**

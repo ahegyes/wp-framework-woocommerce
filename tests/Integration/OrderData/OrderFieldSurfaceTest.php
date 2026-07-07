@@ -14,13 +14,13 @@ use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\CustomFieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\Exceptions\UnsupportedOrderScreenException;
-use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderFieldStore;
+use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderFieldSurface;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\OrderMetaRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass( OrderFieldStore::class )]
+#[CoversClass( OrderFieldSurface::class )]
 #[UsesClass( ObjectFieldForm::class )]
 #[UsesClass( OrderMetaRepository::class )]
 #[UsesClass( FieldGroup::class )]
@@ -31,7 +31,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( OptionsResolver::class )]
 #[UsesClass( FieldType::class )]
 #[UsesClass( CustomFieldType::class )]
-final class OrderFieldStoreTest extends TestCase {
+final class OrderFieldSurfaceTest extends TestCase {
 	private const GROUP_ID = 'dws_unlock';
 
 	private const ISOLATED_HOOKS = array(
@@ -104,7 +104,7 @@ final class OrderFieldStoreTest extends TestCase {
 		$screen = $this->order_screen();
 		\set_current_screen( $screen );
 
-		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		( new OrderFieldSurface() )->register( $this->group(), $this->placement() );
 		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
 		self::assertArrayHasKey( self::GROUP_ID, $this->boxes_on( $screen ) );
@@ -119,7 +119,7 @@ final class OrderFieldStoreTest extends TestCase {
 	public function test_register_targets_the_legacy_post_screen_when_hpos_is_disabled(): void {
 		\add_filter( 'option_woocommerce_custom_orders_table_enabled', static fn (): string => 'no' );
 
-		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		( new OrderFieldSurface() )->register( $this->group(), $this->placement() );
 
 		self::assertNotFalse( \has_action( 'add_meta_boxes_shop_order' ) );
 		self::assertFalse( \has_action( 'add_meta_boxes_woocommerce_page_wc-orders' ) );
@@ -129,7 +129,7 @@ final class OrderFieldStoreTest extends TestCase {
 	public function test_register_targets_both_hpos_screens_when_hpos_is_enabled(): void {
 		\add_filter( 'option_woocommerce_custom_orders_table_enabled', static fn (): string => 'yes' );
 
-		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		( new OrderFieldSurface() )->register( $this->group(), $this->placement() );
 
 		self::assertNotFalse( \has_action( 'add_meta_boxes_woocommerce_page_wc-orders' ) );
 		self::assertNotFalse( \has_action( 'add_meta_boxes_admin_page_wc-orders' ) );
@@ -140,7 +140,7 @@ final class OrderFieldStoreTest extends TestCase {
 		$screen = $this->order_screen();
 		\set_current_screen( $screen );
 
-		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		( new OrderFieldSurface() )->register( $this->group(), $this->placement() );
 		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
 		$html = $this->render_box( $screen );
@@ -153,7 +153,7 @@ final class OrderFieldStoreTest extends TestCase {
 		$screen = $this->order_screen();
 		\set_current_screen( $screen );
 
-		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		( new OrderFieldSurface() )->register( $this->group(), $this->placement() );
 		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
 		$html = $this->render_box( $screen );
@@ -176,7 +176,7 @@ final class OrderFieldStoreTest extends TestCase {
 				$saved_for = $object_id;
 			},
 		);
-		$store     = new OrderFieldStore();
+		$store     = new OrderFieldSurface();
 		$store->register( $group, $this->placement() );
 		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
@@ -191,7 +191,7 @@ final class OrderFieldStoreTest extends TestCase {
 
 	public function test_a_truthy_submission_is_stored_and_a_falsy_one_deletes_the_meta(): void {
 		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register( $this->group(), $this->placement() );
 
 		$_POST = array(
@@ -207,7 +207,7 @@ final class OrderFieldStoreTest extends TestCase {
 	}
 
 	public function test_crud_addresses_the_same_meta_key_the_form_save_writes(): void {
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$group = $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) );
 		$store->register( $group, $this->placement() );
 
@@ -232,7 +232,7 @@ final class OrderFieldStoreTest extends TestCase {
 
 	public function test_a_zero_value_is_stored_not_revoked(): void {
 		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
 
 		$_POST = array(
@@ -247,7 +247,7 @@ final class OrderFieldStoreTest extends TestCase {
 
 	public function test_save_applies_the_builtin_default_sanitizer(): void {
 		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$raw   = '<b>x</b>';
 		$store->register( $this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note' ) ), $this->placement() );
 
@@ -262,7 +262,7 @@ final class OrderFieldStoreTest extends TestCase {
 
 	public function test_save_preserves_an_existing_value_when_a_present_submission_is_invalid(): void {
 		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register(
 			$this->group_with(
 				new SettingsField( id: 'status', type: 'select', label: 'Status', options: array( 'locked' => 'Locked' ) ),
@@ -282,7 +282,7 @@ final class OrderFieldStoreTest extends TestCase {
 
 	public function test_save_is_skipped_without_a_valid_nonce(): void {
 		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register( $this->group(), $this->placement() );
 
 		$_POST = array( self::GROUP_ID => array( 'unlocked' => '1' ) );
@@ -297,7 +297,7 @@ final class OrderFieldStoreTest extends TestCase {
 		}
 		\set_current_screen( 'admin_page_wc-orders' );
 
-		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		( new OrderFieldSurface() )->register( $this->group(), $this->placement() );
 		\do_action( 'add_meta_boxes_admin_page_wc-orders', \wc_get_order( $this->order_id ) );
 
 		self::assertArrayHasKey( self::GROUP_ID, $this->boxes_on( 'admin_page_wc-orders' ) );
@@ -305,7 +305,7 @@ final class OrderFieldStoreTest extends TestCase {
 
 	public function test_a_field_meta_key_overrides_the_id_for_storage(): void {
 		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register(
 			$this->group_with( new SettingsField( id: 'unlocked', type: 'checkbox', label: 'Unlocked', meta_key: '_lpm_unlocked' ) ),
 			$this->placement(),
@@ -333,7 +333,7 @@ final class OrderFieldStoreTest extends TestCase {
 		\wp_set_current_user( $subscriber );
 
 		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register( $this->group(), $this->placement() );
 
 		$_POST = array(
@@ -349,7 +349,7 @@ final class OrderFieldStoreTest extends TestCase {
 	public function test_a_configured_box_capability_overrides_the_default(): void {
 		$repo      = new OrderMetaRepository();
 		$placement = new MetaBoxPlacement( screen: 'shop_order', context: 'side', priority: 'default', capability: 'dws_nonexistent_cap' );
-		$store     = new OrderFieldStore();
+		$store     = new OrderFieldSurface();
 		$store->register( $this->group(), $placement );
 
 		// The administrator passes the default order-edit gate but lacks the configured capability, so the save is refused.
@@ -376,7 +376,7 @@ final class OrderFieldStoreTest extends TestCase {
 		\assert( \is_int( $subscriber ) );
 		\wp_set_current_user( $subscriber );
 
-		( new OrderFieldStore() )->register( $this->group(), $this->placement() );
+		( new OrderFieldSurface() )->register( $this->group(), $this->placement() );
 		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
 		self::assertArrayNotHasKey( self::GROUP_ID, $this->boxes_on( $screen ) );
@@ -386,7 +386,7 @@ final class OrderFieldStoreTest extends TestCase {
 
 	public function test_a_multi_field_save_persists_the_order_once(): void {
 		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register(
 			new FieldGroup(
 				id: self::GROUP_ID,
@@ -422,7 +422,7 @@ final class OrderFieldStoreTest extends TestCase {
 	}
 
 	public function test_a_no_op_save_does_not_persist_the_order(): void {
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register( $this->group(), $this->placement() );
 
 		$saves = 0;
@@ -441,7 +441,7 @@ final class OrderFieldStoreTest extends TestCase {
 	}
 
 	public function test_a_duplicate_field_id_in_a_group_is_rejected(): void {
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register(
 			new FieldGroup(
 				id: self::GROUP_ID,
@@ -468,7 +468,7 @@ final class OrderFieldStoreTest extends TestCase {
 
 		$this->expectException( UnsupportedOrderScreenException::class );
 
-		( new OrderFieldStore() )->register( $this->group(), $placement );
+		( new OrderFieldSurface() )->register( $this->group(), $placement );
 	}
 
 	public function test_a_group_title_is_escaped_before_registration(): void {
@@ -480,7 +480,7 @@ final class OrderFieldStoreTest extends TestCase {
 			title: '<script>alert(1)</script>',
 			fields_provider: static fn ( int $object_id ): array => array(),
 		);
-		( new OrderFieldStore() )->register( $group, $this->placement() );
+		( new OrderFieldSurface() )->register( $group, $this->placement() );
 		\do_action( "add_meta_boxes_$screen", \wc_get_order( $this->order_id ) );
 
 		$title = (string) ( ( (array) ( $this->boxes_on( $screen )[ self::GROUP_ID ] ?? array() ) )['title'] ?? '' );
@@ -504,7 +504,7 @@ final class OrderFieldStoreTest extends TestCase {
 		);
 		$group        = $this->group_with( new SettingsField( id: 'home_page', type: 'single_select_page', label: 'Home Page' ) );
 		$repo         = new OrderMetaRepository();
-		$store        = new OrderFieldStore(
+		$store        = new OrderFieldSurface(
 			renderer: new FieldRenderer( custom_types: $custom_types ),
 			processor: new FieldProcessor( custom_types: $custom_types ),
 		);
@@ -529,7 +529,7 @@ final class OrderFieldStoreTest extends TestCase {
 		\set_current_screen( $screen );
 
 		$repo  = new OrderMetaRepository();
-		$store = new OrderFieldStore();
+		$store = new OrderFieldSurface();
 		$store->register(
 			$this->group_with( new SettingsField( id: 'note', type: 'text', label: 'Note', default_value: 'preset' ) ),
 			$this->placement(),

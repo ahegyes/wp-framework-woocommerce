@@ -17,9 +17,9 @@ use function DeepWebSolutions\Framework\Settings\Schema\wordpress_field_type_san
 use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
 
 /**
- * Registers a WooCommerce product-data settings tab and persists its fields as product meta.
+ * Surface that mounts a WooCommerce product-data settings tab and persists its fields as product meta.
  *
- * One store drives one tab. register_tab() wires WooCommerce's three product hooks — add the tab, render
+ * One surface drives one tab. register_tab() wires WooCommerce's three product hooks — add the tab, render
  * its panel, save it — plus the two default-metadata filters that make a product predating a field render
  * its descriptor default instead of a blank. Rendering uses native woocommerce_wp_* controls; saving is
  * framework-owned (WooCommerce verifies the product-edit nonce and capability before its save hook fires).
@@ -28,7 +28,7 @@ use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
  * @since   2.0.0
  * @version 2.0.0
  */
-final class ProductDataFieldStore {
+final class ProductDataFieldSurface {
 	// region FIELDS AND CONSTANTS
 
 	/**

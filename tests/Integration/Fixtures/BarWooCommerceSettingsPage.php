@@ -2,9 +2,9 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures;
 
-use DeepWebSolutions\Framework\WooCommerce\Backend\DescriptorBackedWCSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Backend\DescriptorBackedWooCommerceSettingsPage;
 
 /**
  * A second distinct settings-page subclass standing in for another plugin's coexisting page.
  */
-final class BarWCSettingsPage extends DescriptorBackedWCSettingsPage {}
+final class BarWooCommerceSettingsPage extends DescriptorBackedWooCommerceSettingsPage {}

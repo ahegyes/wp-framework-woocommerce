@@ -2,9 +2,9 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures;
 
-use DeepWebSolutions\Framework\WooCommerce\Backend\DescriptorBackedWCSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Backend\DescriptorBackedWooCommerceSettingsPage;
 
 /**
  * A subclass deliberately never bound to a descriptor, to exercise the unbound-instantiation guard.
  */
-final class UnboundWCSettingsPage extends DescriptorBackedWCSettingsPage {}
+final class UnboundWooCommerceSettingsPage extends DescriptorBackedWooCommerceSettingsPage {}

@@ -11,9 +11,9 @@ use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\Backend\WooCommerceSettingsBackend;
 use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnsupportedSettingsPageCapabilityException;
 use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnboundSettingsPageException;
-use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\BarWCSettingsPage;
-use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\FooWCSettingsPage;
-use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\LazyBindWCSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\BarWooCommerceSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\FooWooCommerceSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Tests\Integration\Fixtures\LazyBindWooCommerceSettingsPage;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -46,7 +46,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_register_page_adds_the_page_as_a_woocommerce_settings_tab(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page( $this->single_field_page( 'store_name', 'text', 'Store Name' ) );
 
 		$ids = $this->tab_ids( \apply_filters( 'woocommerce_get_settings_pages', array() ) );
@@ -55,10 +55,10 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_two_backends_register_coexisting_pages_without_collision(): void {
-		( new WooCommerceSettingsBackend( FooWCSettingsPage::class ) )->register_page(
+		( new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class ) )->register_page(
 			$this->page( 'dws-foo', 'dws_foo', 'Foo', array( new SettingsField( id: 'a', type: 'text', label: 'A' ) ) ),
 		);
-		( new WooCommerceSettingsBackend( BarWCSettingsPage::class ) )->register_page(
+		( new WooCommerceSettingsBackend( BarWooCommerceSettingsPage::class ) )->register_page(
 			$this->page( 'dws-bar', 'dws_bar', 'Bar', array( new SettingsField( id: 'b', type: 'text', label: 'B' ) ) ),
 		);
 
@@ -69,7 +69,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_a_field_value_round_trips_through_a_prefixed_option(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page( $this->single_field_page( 'store_name', 'text', 'Store Name' ) );
 
 		$backend->set( 'store_name', 'Acme' );
@@ -92,7 +92,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 			),
 		);
 
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page( $page );
 
 		$backend->set( 'store_name', 'Acme' );
@@ -112,7 +112,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_a_stored_value_is_distinct_from_an_absent_one(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page(
 			$this->page(
 				'dws-foo',
@@ -136,7 +136,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_the_sanitize_bridge_runs_the_descriptor_sanitizer(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page(
 			$this->page(
 				'dws-foo',
@@ -154,7 +154,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_register_page_defers_binding_until_woocommerce_builds_pages(): void {
-		$backend = new WooCommerceSettingsBackend( LazyBindWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( LazyBindWooCommerceSettingsPage::class );
 		$backend->register_page(
 			$this->page( 'dws-lazy', 'dws_lazy', 'Lazy', array( new SettingsField( id: 'a', type: 'text', label: 'A' ) ) ),
 		);
@@ -164,11 +164,11 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 		// therefore still unbound here, and instantiating it throws.
 		$this->expectException( UnboundSettingsPageException::class );
 
-		new LazyBindWCSettingsPage();
+		new LazyBindWooCommerceSettingsPage();
 	}
 
 	public function test_a_field_the_user_cannot_edit_is_not_rendered(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page(
 			$this->page(
 				'dws-foo',
@@ -182,18 +182,18 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 		);
 
 		\apply_filters( 'woocommerce_get_settings_pages', array() );
-		$ids = \array_column( ( new FooWCSettingsPage() )->get_settings_for_section( '' ), 'id' );
+		$ids = \array_column( ( new FooWooCommerceSettingsPage() )->get_settings_for_section( '' ), 'id' );
 
 		self::assertContains( 'dws-foo_open', $ids );
 		self::assertNotContains( 'dws-foo_secret', $ids );
 	}
 
 	public function test_each_descriptor_section_registers_as_a_native_woocommerce_section(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page( $this->two_section_page() );
 
 		\apply_filters( 'woocommerce_get_settings_pages', array() );
-		$page = new FooWCSettingsPage();
+		$page = new FooWooCommerceSettingsPage();
 
 		self::assertSame(
 			array(
@@ -205,11 +205,11 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_each_native_woocommerce_section_renders_only_its_own_fields(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page( $this->two_section_page() );
 
 		\apply_filters( 'woocommerce_get_settings_pages', array() );
-		$page         = new FooWCSettingsPage();
+		$page         = new FooWooCommerceSettingsPage();
 		$default_ids  = \array_column( $page->get_settings_for_section( '' ), 'id' );
 		$advanced_ids = \array_column( $page->get_settings_for_section( 'advanced' ), 'id' );
 
@@ -225,16 +225,16 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_a_single_descriptor_section_registers_only_the_default_woocommerce_section(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page( $this->single_field_page( 'store_name', 'text', 'Store Name' ) );
 
 		\apply_filters( 'woocommerce_get_settings_pages', array() );
 
-		self::assertSame( array( '' => 'General' ), ( new FooWCSettingsPage() )->get_sections() );
+		self::assertSame( array( '' => 'General' ), ( new FooWooCommerceSettingsPage() )->get_sections() );
 	}
 
 	public function test_a_save_of_a_field_the_user_cannot_edit_is_rejected(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page(
 			$this->page(
 				'dws-foo',
@@ -253,7 +253,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_register_page_rejects_a_non_woocommerce_settings_capability(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 
 		$this->expectException( UnsupportedSettingsPageCapabilityException::class );
 
@@ -270,7 +270,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_set_honors_the_field_autoload_policy(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page(
 			$this->page(
 				'dws-foo',
@@ -293,7 +293,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_a_no_cap_save_of_an_unstored_field_leaves_it_absent(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page(
 			$this->page(
 				'dws-foo',
@@ -312,7 +312,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_accessing_an_unregistered_field_throws(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 		$backend->register_page( $this->single_field_page( 'store_name', 'text', 'Store Name' ) );
 
 		$this->expectException( InvalidSettingsFieldException::class );
@@ -321,7 +321,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_a_duplicate_field_id_across_sections_throws(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 
 		$this->expectException( DuplicateSettingsFieldException::class );
 
@@ -341,7 +341,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_a_duplicate_section_id_on_a_page_throws(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 
 		$this->expectException( DuplicateSettingsSectionException::class );
 
@@ -361,7 +361,7 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	}
 
 	public function test_a_section_id_colliding_with_a_field_id_throws(): void {
-		$backend = new WooCommerceSettingsBackend( FooWCSettingsPage::class );
+		$backend = new WooCommerceSettingsBackend( FooWooCommerceSettingsPage::class );
 
 		$this->expectException( DuplicateSettingsFieldException::class );
 

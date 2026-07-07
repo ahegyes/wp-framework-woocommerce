@@ -6,13 +6,13 @@ use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
-use DeepWebSolutions\Framework\WooCommerce\Backend\WCSettingsBuilder;
+use DeepWebSolutions\Framework\WooCommerce\Backend\WooCommerceSettingsBuilder;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\Attributes\UsesFunction;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass( WCSettingsBuilder::class )]
+#[CoversClass( WooCommerceSettingsBuilder::class )]
 #[UsesClass( OptionsResolver::class )]
 #[UsesClass( SettingsField::class )]
 #[UsesClass( SettingsPage::class )]
@@ -22,9 +22,9 @@ use PHPUnit\Framework\TestCase;
 #[UsesFunction( 'DeepWebSolutions\Framework\Shared\Identifier\is_valid_identifier' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\stringify_for_output' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\WooCommerce\to_yes_no' )]
-final class WCSettingsBuilderTest extends TestCase {
+final class WooCommerceSettingsBuilderTest extends TestCase {
 	public function test_emits_a_title_fields_sectionend_sequence_per_section(): void {
-		$built = ( new WCSettingsBuilder() )->build( $this->page() );
+		$built = ( new WooCommerceSettingsBuilder() )->build( $this->page() );
 
 		$shape = \array_map(
 			static fn ( array $row ): array => array( $row['type'], $row['id'] ?? null ),
@@ -46,7 +46,7 @@ final class WCSettingsBuilderTest extends TestCase {
 	}
 
 	public function test_a_section_title_row_carries_the_section_title(): void {
-		$built = ( new WCSettingsBuilder() )->build( $this->page() );
+		$built = ( new WooCommerceSettingsBuilder() )->build( $this->page() );
 
 		self::assertSame( 'General', $built[0]['title'] );
 		self::assertSame( 'Advanced', $built[4]['title'] );
@@ -54,7 +54,7 @@ final class WCSettingsBuilderTest extends TestCase {
 
 	public function test_build_section_emits_only_that_sections_title_fields_and_sectionend(): void {
 		$page  = $this->page();
-		$built = ( new WCSettingsBuilder() )->build_section( $page, $page->sections[1] );
+		$built = ( new WooCommerceSettingsBuilder() )->build_section( $page, $page->sections[1] );
 
 		$shape = \array_map(
 			static fn ( array $row ): array => array( $row['type'], $row['id'] ?? null ),
@@ -72,7 +72,7 @@ final class WCSettingsBuilderTest extends TestCase {
 	}
 
 	public function test_a_field_row_carries_type_label_and_default(): void {
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
 
 		self::assertSame( 'text', $row['type'] );
 		self::assertSame( 'Store Name', $row['title'] );
@@ -80,7 +80,7 @@ final class WCSettingsBuilderTest extends TestCase {
 	}
 
 	public function test_a_null_default_is_omitted(): void {
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_debug' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $this->page() ), 'dws-shop_debug' );
 
 		self::assertArrayNotHasKey( 'default', $row );
 	}
@@ -90,7 +90,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'tagline', type: 'text', label: 'Tagline', description: 'Shown under the field.' ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_tagline' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_tagline' );
 
 		self::assertSame( 'Shown under the field.', $row['desc'] );
 	}
@@ -98,7 +98,7 @@ final class WCSettingsBuilderTest extends TestCase {
 	public function test_a_field_row_carries_an_explicit_off_autoload_flag_by_default(): void {
 		// WooCommerce defaults a settings option to autoloaded when the entry omits 'autoload', so the
 		// builder always emits it to keep framework settings out of alloptions unless a field opts in.
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
 
 		self::assertFalse( $row['autoload'] );
 	}
@@ -108,13 +108,13 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'cache', type: 'text', label: 'Cache', autoload: true ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_cache' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_cache' );
 
 		self::assertTrue( $row['autoload'] );
 	}
 
 	public function test_resolved_options_are_included_for_a_choice_field(): void {
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_gateway' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $this->page() ), 'dws-shop_gateway' );
 
 		self::assertSame(
 			array(
@@ -126,7 +126,7 @@ final class WCSettingsBuilderTest extends TestCase {
 	}
 
 	public function test_options_are_omitted_for_a_field_without_any(): void {
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
 
 		self::assertArrayNotHasKey( 'options', $row );
 	}
@@ -141,7 +141,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_role' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_role' );
 
 		self::assertSame( array( 'admin' => 'Admin' ), $row['options'] );
 	}
@@ -159,7 +159,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_qty' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_qty' );
 
 		self::assertSame(
 			array(
@@ -171,7 +171,7 @@ final class WCSettingsBuilderTest extends TestCase {
 	}
 
 	public function test_custom_attributes_are_omitted_when_empty(): void {
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $this->page() ), 'dws-shop_store_name' );
 
 		self::assertArrayNotHasKey( 'custom_attributes', $row );
 	}
@@ -181,7 +181,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: true ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
 
 		self::assertSame( 'yes', $row['default'] );
 	}
@@ -191,7 +191,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: false ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
 
 		self::assertSame( 'no', $row['default'] );
 	}
@@ -201,7 +201,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: 1 ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
 
 		self::assertSame( 'yes', $row['default'] );
 	}
@@ -211,7 +211,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: 'yes' ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
 
 		self::assertSame( 'yes', $row['default'] );
 	}
@@ -222,7 +222,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: 'no' ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
 
 		self::assertSame( 'no', $row['default'] );
 	}
@@ -233,7 +233,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag', default_value: 'anything' ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_flag' );
 
 		self::assertSame( 'no', $row['default'] );
 	}
@@ -251,7 +251,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_amount' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_amount' );
 
 		self::assertSame(
 			array(
@@ -267,7 +267,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'choice', type: 'select', label: 'Choice', options: array( 'a' => array( 'nested' ) ) ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_choice' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_choice' );
 
 		self::assertSame( array( 'a' => '' ), $row['options'] );
 	}
@@ -287,7 +287,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_qty' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_qty' );
 
 		self::assertSame( array( 'min' => '0' ), $row['custom_attributes'] );
 	}
@@ -297,7 +297,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'x', type: 'text', label: 'X', attributes: array( 'data-Foo' => 'bar' ) ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_x' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_x' );
 
 		self::assertSame( array( 'data-Foo' => 'bar' ), $row['custom_attributes'] );
 	}
@@ -307,7 +307,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'x', type: 'text', label: 'X', attributes: array( 'onmouseover' => 'evil()' ) ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_x' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_x' );
 
 		self::assertArrayNotHasKey( 'custom_attributes', $row );
 	}
@@ -315,7 +315,7 @@ final class WCSettingsBuilderTest extends TestCase {
 	public function test_a_choice_field_with_no_options_still_emits_an_empty_options_array(): void {
 		$page = $this->page_with_field( new SettingsField( id: 'sel', type: 'select', label: 'Sel' ) );
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_sel' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_sel' );
 
 		self::assertArrayHasKey( 'options', $row );
 		self::assertSame( array(), $row['options'] );
@@ -326,7 +326,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'n', type: 'number', label: 'N', options: array( 'a' => 'A' ) ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_n' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_n' );
 
 		self::assertArrayNotHasKey( 'options', $row );
 	}
@@ -345,7 +345,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_tags' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_tags' );
 
 		self::assertSame( array( '1', '2' ), $row['default'] );
 	}
@@ -355,7 +355,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			new SettingsField( id: 'tags', type: 'multiselect', label: 'Tags', default_value: 'oops', options: array( 'a' => 'A' ) ),
 		);
 
-		$row = $this->row_by_id( ( new WCSettingsBuilder() )->build( $page ), 'dws-shop_tags' );
+		$row = $this->row_by_id( ( new WooCommerceSettingsBuilder() )->build( $page ), 'dws-shop_tags' );
 
 		self::assertSame( array(), $row['default'] );
 	}
@@ -368,7 +368,7 @@ final class WCSettingsBuilderTest extends TestCase {
 			capability: 'manage_woocommerce',
 		);
 
-		self::assertSame( array(), ( new WCSettingsBuilder() )->build( $page ) );
+		self::assertSame( array(), ( new WooCommerceSettingsBuilder() )->build( $page ) );
 	}
 
 	private function page(): SettingsPage {

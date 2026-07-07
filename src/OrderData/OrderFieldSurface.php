@@ -17,7 +17,7 @@ use DeepWebSolutions\Framework\WooCommerce\OrderData\Exceptions\UnsupportedOrder
 use function DeepWebSolutions\Framework\Settings\Schema\field_label_html;
 
 /**
- * Registers a field group as a WooCommerce-order meta box and stores its fields as order meta.
+ * Surface that mounts a field group onto the WooCommerce order edit screen as a meta box and stores its fields as order meta.
  *
  * Resolves the order edit screen at registration — the legacy post screen or, under HPOS, the orders
  * page (and the admin.php variant WooCommerce uses for a user who cannot see the WooCommerce menu) — so
@@ -26,7 +26,7 @@ use function DeepWebSolutions\Framework\Settings\Schema\field_label_html;
  * configured box capability, defaulting to WooCommerce's own order-edit check: the order's edit
  * capability, or manage_woocommerce.
  *
- * Beyond registration, the store exposes field-addressed CRUD over the same storage keys and value
+ * Beyond registration, the surface exposes field-addressed CRUD over the same storage keys and value
  * semantics the form path applies — get/set/has/delete by group and field id — plus meta_keys() for the
  * consumer's uninstall cleanup. Object fields are revoke-based, so reads never fall back to the field's
  * declared default.
@@ -37,7 +37,7 @@ use function DeepWebSolutions\Framework\Settings\Schema\field_label_html;
  * @since   2.0.0
  * @version 2.0.0
  */
-final class OrderFieldStore {
+final class OrderFieldSurface {
 	// region FIELDS AND CONSTANTS
 
 	/**
@@ -303,7 +303,7 @@ final class OrderFieldStore {
 	protected function resolve_screens( string $screen ): array {
 		if ( self::ORDER_SCREEN !== $screen ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
-			throw new UnsupportedOrderScreenException( "OrderFieldStore registers meta boxes on the WooCommerce order screen ('shop_order') only; got '$screen'." );
+			throw new UnsupportedOrderScreenException( "OrderFieldSurface registers meta boxes on the WooCommerce order screen ('shop_order') only; got '$screen'." );
 		}
 		if ( ! OrderUtil::custom_orders_table_usage_is_enabled() ) {
 			return array( self::ORDER_SCREEN );

@@ -5,7 +5,7 @@ namespace DeepWebSolutions\Framework\WooCommerce\Tests\Unit;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
-use DeepWebSolutions\Framework\WooCommerce\Backend\DescriptorBackedWCSettingsPage;
+use DeepWebSolutions\Framework\WooCommerce\Backend\DescriptorBackedWooCommerceSettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Backend\WooCommerceSettingsBackend;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -58,6 +58,6 @@ final class WooCommerceSettingsBackendTest extends TestCase {
 	private function backend(): WooCommerceSettingsBackend {
 		// The page subclass is never loaded or instantiated by option_keys(), so the abstract base's own
 		// class-string satisfies the constructor without WooCommerce present.
-		return new WooCommerceSettingsBackend( DescriptorBackedWCSettingsPage::class );
+		return new WooCommerceSettingsBackend( DescriptorBackedWooCommerceSettingsPage::class );
 	}
 }

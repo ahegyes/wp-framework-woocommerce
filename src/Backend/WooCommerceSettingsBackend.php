@@ -22,7 +22,7 @@ use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_cur
  * checkbox is the string 'no'), never the boolean false WordPress cannot keep distinct from an absent
  * option. Each field's descriptor sanitizer, and its per-field capability gate, are bridged onto
  * WooCommerce's per-option sanitize filter. The tab is realized through a consumer-declared
- * DescriptorBackedWCSettingsPage subclass, bound here so WooCommerce can rebuild it by class name across
+ * DescriptorBackedWooCommerceSettingsPage subclass, bound here so WooCommerce can rebuild it by class name across
  * requests.
  *
  * @since   2.0.0
@@ -71,7 +71,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   class-string<DescriptorBackedWCSettingsPage> $page_class Consumer subclass that renders the page as a WooCommerce tab.
+	 * @param   class-string<DescriptorBackedWooCommerceSettingsPage> $page_class Consumer subclass that renders the page as a WooCommerce tab.
 	 */
 	public function __construct(
 		protected string $page_class,
@@ -104,7 +104,7 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 		\add_filter(
 			'woocommerce_get_settings_pages',
 			function ( array $pages ) use ( $page ): array {
-				DescriptorBackedWCSettingsPage::bind( $this->page_class, $page );
+				DescriptorBackedWooCommerceSettingsPage::bind( $this->page_class, $page );
 				$pages[] = new $this->page_class();
 
 				return $pages;
