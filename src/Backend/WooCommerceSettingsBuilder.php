@@ -9,8 +9,9 @@ use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 
 use function DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes;
+use function DeepWebSolutions\Framework\Settings\Schema\normalize_checkbox_value;
 use function DeepWebSolutions\Framework\Settings\Schema\stringify_for_output;
-use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
+use function DeepWebSolutions\Framework\Settings\Schema\stringify_option_labels;
 
 /**
  * Translates a settings page descriptor into WooCommerce's settings-array format.
@@ -132,7 +133,7 @@ final readonly class WooCommerceSettingsBuilder {
 
 		// A choice field always carries an options array: WooCommerce iterates it unconditionally when rendering.
 		if ( $this->expects_options( $field->type ) ) {
-			$entry['options'] = $this->stringify_labels( $this->options_resolver->resolve( $field->options ) );
+			$entry['options'] = stringify_option_labels( $this->options_resolver->resolve( $field->options ) );
 		}
 
 		$attributes = filter_field_attributes( $field->attributes );
@@ -155,7 +156,7 @@ final readonly class WooCommerceSettingsBuilder {
 	 */
 	protected function map_default( SettingsField $field ): mixed {
 		return match ( $field->type ) {
-			FieldType::Checkbox->value    => to_yes_no( $field->default_value ),
+			FieldType::Checkbox->value    => normalize_checkbox_value( $field->default_value ),
 			// WooCommerce matches multiselect selections with a strict (string) in_array, so the set must be strings.
 			FieldType::Multiselect->value => $this->stringify_selected( $field->default_value ),
 			default                       => $field->default_value,
@@ -178,28 +179,6 @@ final readonly class WooCommerceSettingsBuilder {
 			array( FieldType::Select->value, FieldType::Multiselect->value, FieldType::Radio->value ),
 			true,
 		);
-	}
-
-	/**
-	 * Stringifies a resolved options map's labels, matching the framework renderer's coercion.
-	 *
-	 * WooCommerce passes each option label through esc_html(), which expects a string; a non-scalar
-	 * label becomes an empty string, exactly as the WordPress field renderer coerces it.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   array<array-key, mixed> $options Resolved value-to-label map.
-	 *
-	 * @return  array<array-key, string>
-	 */
-	protected function stringify_labels( array $options ): array {
-		$labels = array();
-		foreach ( $options as $value => $label ) {
-			$labels[ $value ] = stringify_for_output( $label );
-		}
-
-		return $labels;
 	}
 
 	/**

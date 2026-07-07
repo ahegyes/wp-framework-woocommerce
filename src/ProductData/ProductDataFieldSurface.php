@@ -13,11 +13,12 @@ use DeepWebSolutions\Framework\Shared\Result\Success;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
 
 use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
+use function DeepWebSolutions\Framework\Settings\Schema\normalize_checkbox_value;
 use function DeepWebSolutions\Framework\Settings\Schema\wordpress_field_type_sanitizers;
-use function DeepWebSolutions\Framework\WooCommerce\to_yes_no;
 
 /**
- * Surface that mounts a WooCommerce product-data settings tab and persists its fields as product meta.
+ * Surface that mounts a WooCommerce product-data settings tab and persists its fields as product meta
+ * through WooCommerce's product CRUD.
  *
  * One surface drives one tab. register_tab() wires WooCommerce's three product hooks — add the tab, render
  * its panel, save it — plus the two default-metadata filters that make a product predating a field render
@@ -123,20 +124,27 @@ final class ProductDataFieldSurface {
 		\add_filter( 'woocommerce_product_data_tabs', array( $this, 'register_tab_filter' ) );
 		\add_action( 'woocommerce_product_data_panels', array( $this, 'render_panel' ) );
 		\add_action( 'woocommerce_process_product_meta', array( $this, 'save' ) );
+
+		// Default injection is inherently post-meta-coupled: default_post_metadata and
+		// woocommerce_data_store_wp_post_read_meta are seams of WooCommerce's post-backed product datastore,
+		// and the pre-save strip discriminates by raw postmeta row. The CRUD and save paths read and write
+		// through WooCommerce's product CRUD, so a non-postmeta product datastore needs a new injection seam
+		// only.
 		\add_filter( 'default_post_metadata', array( $this, 'inject_default' ), 99, 4 );
 		\add_filter( 'woocommerce_data_store_wp_post_read_meta', array( $this, 'inject_default_bulk' ), 99, 2 );
 		\add_action( 'woocommerce_before_product_object_save', array( $this, 'strip_injected_defaults' ) );
 	}
 
 	/**
-	 * Returns a field's effective value for a product: its stored value, or its descriptor default while none is
-	 * stored on a supported product; the caller fallback for a non-product or an unsupported one.
+	 * Returns a field's effective value for a product, read through WooCommerce's product CRUD: its stored
+	 * value, or its descriptor default while none is stored on a supported product; the caller fallback for
+	 * a non-product or an unsupported one.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   int    $product_id    Product to read.
 	 * @param   string $section_id    Section the field belongs to.
+	 * @param   int    $product_id    Product to read.
 	 * @param   string $field_id      Field to read.
 	 * @param   mixed  $default_value Value returned for a non-product or an unsupported product with nothing stored.
 	 *
@@ -144,13 +152,13 @@ final class ProductDataFieldSurface {
 	 *
 	 * @return  mixed
 	 */
-	public function get( int $product_id, string $section_id, string $field_id, mixed $default_value = null ): mixed {
-		$meta_key = $this->require_meta_key( $section_id, $field_id );
+	public function get( string $section_id, int $product_id, string $field_id, mixed $default_value = null ): mixed {
+		$meta_key = $this->meta_key( $section_id, $field_id );
 		$product  = \wc_get_product( $product_id );
 		if ( ! $product instanceof \WC_Product ) {
 			return $default_value;
 		}
-		if ( \metadata_exists( 'post', $product_id, $meta_key ) ) {
+		if ( $this->has_persisted_meta( $product, $meta_key ) ) {
 			return $product->get_meta( $meta_key, true );
 		}
 
@@ -160,20 +168,20 @@ final class ProductDataFieldSurface {
 	}
 
 	/**
-	 * Persists a field's value for a product.
+	 * Persists a field's value for a product through WooCommerce's product CRUD.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   int    $product_id Product to write.
 	 * @param   string $section_id Section the field belongs to.
+	 * @param   int    $product_id Product to write.
 	 * @param   string $field_id   Field to write.
 	 * @param   mixed  $value      Value to persist.
 	 *
 	 * @throws  InvalidSettingsFieldException If the field is not registered on this tab.
 	 */
-	public function set( int $product_id, string $section_id, string $field_id, mixed $value ): void {
-		$meta_key = $this->require_meta_key( $section_id, $field_id );
+	public function set( string $section_id, int $product_id, string $field_id, mixed $value ): void {
+		$meta_key = $this->meta_key( $section_id, $field_id );
 		$product  = \wc_get_product( $product_id );
 		if ( ! $product instanceof \WC_Product ) {
 			return;
@@ -181,7 +189,7 @@ final class ProductDataFieldSurface {
 
 		// A checkbox persists as WooCommerce's yes/no string on every write path, so its render and reads agree.
 		if ( FieldType::Checkbox === FieldType::tryFrom( $this->by_meta_key[ $meta_key ]->type ) ) {
-			$value = to_yes_no( $value );
+			$value = normalize_checkbox_value( $value );
 		}
 
 		$product->update_meta_data( $meta_key, $value );
@@ -197,45 +205,45 @@ final class ProductDataFieldSurface {
 	}
 
 	/**
-	 * Whether a real value is stored for a field on a product — the injected default does not count.
+	 * Whether a real value is stored for a field on a product, read through WooCommerce's product CRUD —
+	 * the injected default does not count.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   int    $product_id Product to check.
 	 * @param   string $section_id Section the field belongs to.
+	 * @param   int    $product_id Product to check.
 	 * @param   string $field_id   Field to check.
 	 *
 	 * @throws  InvalidSettingsFieldException If the field is not registered on this tab.
 	 *
 	 * @return  bool
 	 */
-	public function has( int $product_id, string $section_id, string $field_id ): bool {
-		return \metadata_exists( 'post', $product_id, $this->require_meta_key( $section_id, $field_id ) );
+	public function has( string $section_id, int $product_id, string $field_id ): bool {
+		$meta_key = $this->meta_key( $section_id, $field_id );
+		$product  = \wc_get_product( $product_id );
+
+		return $product instanceof \WC_Product && $this->has_persisted_meta( $product, $meta_key );
 	}
 
 	/**
-	 * Deletes a field's stored value from a product.
+	 * Deletes a field's stored value from a product through WooCommerce's product CRUD.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   int    $product_id Product to clear.
 	 * @param   string $section_id Section the field belongs to.
+	 * @param   int    $product_id Product to clear.
 	 * @param   string $field_id   Field to clear.
 	 *
 	 * @throws  InvalidSettingsFieldException If the field is not registered on this tab.
 	 *
 	 * @return  bool True if a stored value was deleted, false if none existed.
 	 */
-	public function delete( int $product_id, string $section_id, string $field_id ): bool {
-		$meta_key = $this->require_meta_key( $section_id, $field_id );
-		if ( ! \metadata_exists( 'post', $product_id, $meta_key ) ) {
-			return false;
-		}
-
-		$product = \wc_get_product( $product_id );
-		if ( ! $product instanceof \WC_Product ) {
+	public function delete( string $section_id, int $product_id, string $field_id ): bool {
+		$meta_key = $this->meta_key( $section_id, $field_id );
+		$product  = \wc_get_product( $product_id );
+		if ( ! $product instanceof \WC_Product || ! $this->has_persisted_meta( $product, $meta_key ) ) {
 			return false;
 		}
 
@@ -243,23 +251,6 @@ final class ProductDataFieldSurface {
 		$product->save();
 
 		return true;
-	}
-
-	/**
-	 * Resolves a field's product-meta key.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   string $section_id Section the field belongs to.
-	 * @param   string $field_id   Field to resolve.
-	 *
-	 * @throws  InvalidSettingsFieldException If the field is not registered on this tab.
-	 *
-	 * @return  string
-	 */
-	public function meta_key( string $section_id, string $field_id ): string {
-		return $this->require_meta_key( $section_id, $field_id );
 	}
 
 	/**
@@ -318,6 +309,10 @@ final class ProductDataFieldSurface {
 		if ( ! $this->is_supported( $product_id ) ) {
 			return;
 		}
+		$product = \wc_get_product( $product_id );
+		if ( ! $product instanceof \WC_Product ) {
+			return;
+		}
 
 		$tab = $this->tab();
 		echo '<div id="' . \esc_attr( $tab->slug . '_product_data' ) . '" class="panel woocommerce_options_panel">';
@@ -331,12 +326,13 @@ final class ProductDataFieldSurface {
 			echo '<div class="options_group ' . \esc_attr( $tab->slug . '_' . $section->id ) . '">';
 			foreach ( $fields as $field ) {
 				$meta_key = $this->meta_key_for( $section->id, $field );
-				$value    = \get_post_meta( $product_id, $meta_key, true );
+				$value    = $product->get_meta( $meta_key, true );
 
-				if ( null !== FieldType::tryFrom( $field->type ) ) {
-					$this->renderer->render( $field, $value, $meta_key );
-				} elseif ( isset( $tab->custom_renderers[ $field->type ] ) ) {
+				// The tab's own renderer for a non-taxonomy type wins over a renderer-registered custom type.
+				if ( null === FieldType::tryFrom( $field->type ) && isset( $tab->custom_renderers[ $field->type ] ) ) {
 					( $tab->custom_renderers[ $field->type ] )( $field, $value, $meta_key );
+				} else {
+					$this->renderer->render( $field, $value, $meta_key );
 				}
 			}
 			echo '</div>';
@@ -423,7 +419,7 @@ final class ProductDataFieldSurface {
 	 * @version 2.0.0
 	 *
 	 * @param   array<int, object> $meta_data Raw meta rows WooCommerce read for the object.
-	 * @param   object             $wc_object    Object the meta was read for.
+	 * @param   object             $wc_object Object the meta was read for.
 	 *
 	 * @return  array<int, object>
 	 */
@@ -519,7 +515,9 @@ final class ProductDataFieldSurface {
 
 	/**
 	 * Rejects a custom field type the tab cannot handle: render and save both need a consumer seam, so a type
-	 * outside the framework taxonomy must declare a renderer on the tab and a sanitize callback on the field.
+	 * outside the framework taxonomy must declare a renderer — on the tab, or a CustomFieldType registered on
+	 * the field renderer — and a sanitize callback on the field. The custom-type registry is render-only, so
+	 * the sanitize requirement holds either way.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -533,7 +531,7 @@ final class ProductDataFieldSurface {
 		if ( null !== FieldType::tryFrom( $field->type ) ) {
 			return;
 		}
-		if ( ! isset( $tab->custom_renderers[ $field->type ] ) ) {
+		if ( ! isset( $tab->custom_renderers[ $field->type ] ) && ! $this->renderer->has_custom_type( $field->type ) ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
 			throw new InvalidProductDataTabException( "Custom field type '$field->type' on tab '$tab->slug' has no renderer." );
 		}
@@ -571,7 +569,7 @@ final class ProductDataFieldSurface {
 	 *
 	 * @return  string
 	 */
-	protected function require_meta_key( string $section_id, string $field_id ): string {
+	protected function meta_key( string $section_id, string $field_id ): string {
 		$address = $this->address( $section_id, $field_id );
 		if ( ! isset( $this->by_address[ $address ] ) ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- framework-internal exception; never reaches an HTML output context unescaped.
@@ -579,6 +577,29 @@ final class ProductDataFieldSurface {
 		}
 
 		return $this->by_address[ $address ];
+	}
+
+	/**
+	 * Whether a product carries a persisted row for a meta key. A row hydrated from storage holds a
+	 * positive meta id, while the bulk-read injection splices its synthetic default rows with meta id 0,
+	 * so an injected default never counts as stored.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   \WC_Product $product  Product whose meta to inspect.
+	 * @param   string      $meta_key Meta key to look for.
+	 *
+	 * @return  bool
+	 */
+	protected function has_persisted_meta( \WC_Product $product, string $meta_key ): bool {
+		foreach ( $product->get_meta_data() as $meta ) {
+			if ( $meta_key === $meta->key && (int) ( $meta->id ?? 0 ) > 0 ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -655,7 +676,7 @@ final class ProductDataFieldSurface {
 	 */
 	protected function default_value( SettingsField $field ): mixed {
 		return FieldType::Checkbox === FieldType::tryFrom( $field->type )
-			? to_yes_no( $field->default_value )
+			? normalize_checkbox_value( $field->default_value )
 			: $field->default_value;
 	}
 

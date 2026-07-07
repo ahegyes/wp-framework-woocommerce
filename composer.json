@@ -27,10 +27,7 @@
   "autoload": {
     "psr-4": {
       "DeepWebSolutions\\Framework\\WooCommerce\\": "src/"
-    },
-    "files": [
-      "functions.php"
-    ]
+    }
   },
   "autoload-dev": {
     "psr-4": {

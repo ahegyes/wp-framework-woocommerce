@@ -14,7 +14,7 @@ use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Storage\ObjectMeta\ObjectMetaRepositoryInterface;
 use DeepWebSolutions\Framework\WooCommerce\OrderData\Exceptions\UnsupportedOrderScreenException;
 
-use function DeepWebSolutions\Framework\Settings\Schema\field_label_html;
+use function DeepWebSolutions\Framework\Settings\Schema\meta_box_row_html;
 
 /**
  * Surface that mounts a field group onto the WooCommerce order edit screen as a meta box and stores its fields as order meta.
@@ -338,9 +338,7 @@ final class OrderFieldSurface {
 	}
 
 	/**
-	 * The row closure wrapping each control in a meta-box row, its label bound to the control's DOM id.
-	 * A div, not a paragraph: a radio fieldset or the description paragraph inside a p would be reparsed
-	 * as invalid HTML.
+	 * The row closure wrapping each control in a meta-box row — {@see meta_box_row_html()}.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -348,8 +346,7 @@ final class OrderFieldSurface {
 	 * @return  \Closure
 	 */
 	protected function box_row(): \Closure {
-		return static fn ( SettingsField $field, string $control, string $control_id ): string =>
-			'<div class="dws-meta-box-field">' . field_label_html( $field, $control_id ) . '<br />' . $control . '</div>';
+		return static fn ( SettingsField $field, string $control, string $control_id ): string => meta_box_row_html( $field, $control, $control_id );
 	}
 
 	/**

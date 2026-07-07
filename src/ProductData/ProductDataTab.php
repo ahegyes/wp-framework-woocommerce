@@ -9,7 +9,7 @@ use function DeepWebSolutions\Framework\Shared\Identifier\is_valid_global_name_p
 use function DeepWebSolutions\Framework\Shared\Identifier\is_valid_identifier;
 
 /**
- * Declarative description of a WooCommerce product-data settings tab — a custom panel in the product
+ * Descriptor for a WooCommerce product-data settings tab — a custom panel in the product
  * editor's Product data meta box.
  *
  * Its sections (reusing the settings SettingsSection) group SettingsField controls persisted as product
@@ -35,7 +35,9 @@ final readonly class ProductDataTab {
 
 	/**
 	 * Renderers for field types outside the framework taxonomy, keyed by type token. Signature
-	 * `(SettingsField $field, mixed $value, string $meta_key): void`.
+	 * `(SettingsField $field, mixed $value, string $meta_key): void`; each echoes its own markup. A
+	 * tab-level renderer takes precedence over a CustomFieldType the field renderer registers for the
+	 * same type token.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0

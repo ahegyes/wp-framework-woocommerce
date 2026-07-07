@@ -2,8 +2,10 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Tests\Unit;
 
+use DeepWebSolutions\Framework\Settings\Schema\Exceptions\UnknownFieldTypeException;
 use DeepWebSolutions\Framework\Settings\Schema\Field\FieldType;
 use DeepWebSolutions\Framework\Settings\Schema\Options\OptionsResolver;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\CustomFieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldRenderer;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -15,11 +17,13 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass( SettingsField::class )]
 #[UsesClass( OptionsResolver::class )]
 #[UsesClass( FieldType::class )]
+#[UsesClass( CustomFieldType::class )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_checkbox_checked' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Shared\Identifier\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\normalize_checkbox_value' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\stringify_for_output' )]
-#[UsesFunction( 'DeepWebSolutions\Framework\WooCommerce\to_yes_no' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\stringify_option_labels' )]
 final class ProductDataFieldRendererTest extends TestCase {
 	public function test_text_args_carry_id_name_label_value_and_type(): void {
 		$field = new SettingsField( id: 'store', type: 'text', label: 'Store' );
@@ -214,5 +218,40 @@ final class ProductDataFieldRendererTest extends TestCase {
 		$args = ( new ProductDataFieldRenderer() )->args( new SettingsField( id: 'x', type: 'text', label: 'X' ), FieldType::Text, '', 'x' );
 
 		self::assertArrayNotHasKey( 'custom_attributes', $args );
+	}
+
+	public function test_a_registered_custom_type_renders_by_echoing_its_returned_markup(): void {
+		$renderer = new ProductDataFieldRenderer(
+			custom_types: array(
+				'dws_rds' => new CustomFieldType(
+					'dws_rds',
+					static fn ( SettingsField $field, mixed $value, string $name ): string => '<span class="dws-rds" data-key="' . $name . '" data-value="' . (string) $value . '"></span>',
+				),
+			),
+		);
+
+		\ob_start();
+		$renderer->render( new SettingsField( id: 'span', type: 'dws_rds', label: 'Span' ), '12', '_p_general_span' );
+		$html = (string) \ob_get_clean();
+
+		self::assertSame( '<span class="dws-rds" data-key="_p_general_span" data-value="12"></span>', $html );
+	}
+
+	public function test_a_type_outside_the_taxonomy_and_the_registry_throws(): void {
+		$this->expectException( UnknownFieldTypeException::class );
+
+		( new ProductDataFieldRenderer() )->render( new SettingsField( id: 'x', type: 'dws_unwired', label: 'X' ), '', '_p_x' );
+	}
+
+	public function test_has_custom_type_reports_registry_membership(): void {
+		$renderer = new ProductDataFieldRenderer(
+			custom_types: array(
+				'dws_rds' => new CustomFieldType( 'dws_rds', static fn (): string => '' ),
+			),
+		);
+
+		self::assertTrue( $renderer->has_custom_type( 'dws_rds' ) );
+		self::assertFalse( $renderer->has_custom_type( 'dws_other' ) );
+		self::assertFalse( ( new ProductDataFieldRenderer() )->has_custom_type( 'dws_rds' ) );
 	}
 }

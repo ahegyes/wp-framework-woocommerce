@@ -11,11 +11,11 @@ use DeepWebSolutions\Framework\Shared\Version\Version;
  * @since   2.0.0
  * @version 2.0.0
  */
-final class WooCommerceDbVersionConditional implements ConditionalInterface {
+final readonly class WooCommerceDbVersionConditional implements ConditionalInterface {
 	// region MAGIC METHODS
 
 	/**
-	 * Constructs the conditional with the minimum WooCommerce database version required.
+	 * Constructor.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -23,7 +23,7 @@ final class WooCommerceDbVersionConditional implements ConditionalInterface {
 	 * @param   Version $minimum Minimum WooCommerce database version that satisfies the gate.
 	 */
 	public function __construct(
-		protected readonly Version $minimum,
+		protected Version $minimum,
 	) {}
 
 	// endregion

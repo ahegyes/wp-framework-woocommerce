@@ -20,8 +20,9 @@ use PHPUnit\Framework\TestCase;
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\filter_field_attributes' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\is_checkbox_checked' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Shared\Identifier\is_valid_identifier' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\normalize_checkbox_value' )]
 #[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\stringify_for_output' )]
-#[UsesFunction( 'DeepWebSolutions\Framework\WooCommerce\to_yes_no' )]
+#[UsesFunction( 'DeepWebSolutions\Framework\Settings\Schema\stringify_option_labels' )]
 final class WooCommerceSettingsBuilderTest extends TestCase {
 	public function test_emits_a_title_fields_sectionend_sequence_per_section(): void {
 		$built = ( new WooCommerceSettingsBuilder() )->build( $this->page() );

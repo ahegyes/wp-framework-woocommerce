@@ -10,6 +10,7 @@ use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsPageExc
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsPage;
 use DeepWebSolutions\Framework\WooCommerce\Backend\Exceptions\UnsupportedSettingsPageCapabilityException;
+use Psr\Log\LoggerInterface;
 
 use function DeepWebSolutions\Framework\Settings\Schema\assert_unique_section_and_field_ids;
 use function DeepWebSolutions\Framework\Settings\Schema\is_field_editable_by_current_user;
@@ -73,9 +74,11 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 	 * @version 2.0.0
 	 *
 	 * @param   class-string<DescriptorBackedWooCommerceSettingsPage> $page_class Consumer subclass that renders the page as a WooCommerce tab.
+	 * @param   ?LoggerInterface                                      $logger     Logger for late-registration diagnostics; null silences them.
 	 */
 	public function __construct(
 		protected string $page_class,
+		protected ?LoggerInterface $logger = null,
 	) {}
 
 	// endregion
@@ -106,6 +109,13 @@ final class WooCommerceSettingsBackend implements SettingsBackendInterface {
 
 		$this->page   = $page;
 		$this->fields = $this->map_fields( $page );
+
+		if ( \did_filter( 'woocommerce_get_settings_pages' ) > 0 ) {
+			$this->logger?->warning(
+				'Settings page registered after woocommerce_get_settings_pages fired; its tab will not appear.',
+				array( 'slug' => $page->slug ),
+			);
+		}
 
 		// Bind and instantiate inside the filter, not here: WooCommerce loads WC_Settings_Page (the page
 		// subclass's parent) only when it builds its settings pages, just before applying this filter.

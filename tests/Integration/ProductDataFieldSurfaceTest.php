@@ -4,9 +4,11 @@ namespace DeepWebSolutions\Framework\WooCommerce\Tests\Integration;
 
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\DuplicateSettingsFieldException;
 use DeepWebSolutions\Framework\Settings\Schema\Exceptions\InvalidSettingsFieldException;
+use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\CustomFieldType;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsField;
 use DeepWebSolutions\Framework\Settings\Schema\ValueObjects\SettingsSection;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\Exceptions\InvalidProductDataTabException;
+use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldRenderer;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataFieldSurface;
 use DeepWebSolutions\Framework\WooCommerce\ProductData\ProductDataTab;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -156,7 +158,7 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 		$_POST = array( '_dws-wrwc_general_warranty-type' => 'addon' );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertSame( 'addon', $store->get( $this->product_id, 'general', 'warranty-type' ) );
+		self::assertSame( 'addon', $store->get( 'general', $this->product_id, 'warranty-type' ) );
 	}
 
 	public function test_save_applies_the_field_sanitizer(): void {
@@ -170,7 +172,7 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 		$_POST = array( '_dws-wrwc_general_code' => 'abc' );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertSame( 'ABC', $store->get( $this->product_id, 'general', 'code' ) );
+		self::assertSame( 'ABC', $store->get( 'general', $this->product_id, 'code' ) );
 	}
 
 	public function test_save_applies_the_builtin_default_sanitizer(): void {
@@ -185,7 +187,7 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 		$_POST = array( '_dws-wrwc_general_code' => $raw );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertSame( \sanitize_text_field( $raw ), $store->get( $this->product_id, 'general', 'code' ) );
+		self::assertSame( \sanitize_text_field( $raw ), $store->get( 'general', $this->product_id, 'code' ) );
 	}
 
 	public function test_save_preserves_an_existing_value_when_a_present_submission_is_invalid(): void {
@@ -203,12 +205,12 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 				),
 			),
 		);
-		$store->set( $this->product_id, 'general', 'warranty-type', 'global' );
+		$store->set( 'general', $this->product_id, 'warranty-type', 'global' );
 
 		$_POST = array( '_dws-wrwc_general_warranty-type' => 'tampered' );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertSame( 'global', $store->get( $this->product_id, 'general', 'warranty-type' ) );
+		self::assertSame( 'global', $store->get( 'general', $this->product_id, 'warranty-type' ) );
 	}
 
 	public function test_save_is_skipped_for_an_unsupported_product(): void {
@@ -241,7 +243,7 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 		$_POST = array( '_dws-wrwc_general_locations' => array( 'cart', 'email' ) );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertEqualsCanonicalizing( array( 'cart', 'email' ), $store->get( $this->product_id, 'general', 'locations' ) );
+		self::assertEqualsCanonicalizing( array( 'cart', 'email' ), $store->get( 'general', $this->product_id, 'locations' ) );
 	}
 
 	public function test_save_preserves_a_checkbox_when_validation_rejects_the_submission(): void {
@@ -254,12 +256,12 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 		);
 		// Prior value differs from the rejected submission so accept-and-store would land 'yes', not the
 		// preserved 'no' — the assertion fails unless the rejection-preserve branch actually fires.
-		$store->set( $this->product_id, 'general', 'flag', false );
+		$store->set( 'general', $this->product_id, 'flag', false );
 
 		$_POST = array( '_dws-wrwc_general_flag' => 'yes' );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertSame( 'no', $store->get( $this->product_id, 'general', 'flag' ) );
+		self::assertSame( 'no', $store->get( 'general', $this->product_id, 'flag' ) );
 	}
 
 	public function test_save_runs_sanitize_and_validate_on_a_custom_field(): void {
@@ -283,7 +285,7 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 
 		// Sanitize trims to 'reject'; the validator rejects it, so the field clears to the sanitized empty
 		// (sanitize of an absent submission) rather than the descriptor default.
-		self::assertSame( '', $store->get( $this->product_id, 'general', 'span' ) );
+		self::assertSame( '', $store->get( 'general', $this->product_id, 'span' ) );
 	}
 
 	public function test_a_custom_field_without_a_renderer_is_rejected_at_registration(): void {
@@ -331,7 +333,7 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 		$_POST = array();
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
-		self::assertSame( 'sanitized:', $store->get( $this->product_id, 'general', 'span' ) );
+		self::assertSame( 'sanitized:', $store->get( 'general', $this->product_id, 'span' ) );
 	}
 
 	public function test_a_non_scalar_custom_field_submission_is_coerced_before_sanitize(): void {
@@ -357,7 +359,7 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
 
 		self::assertSame( '', $seen );
-		self::assertSame( 'sanitized:', $store->get( $this->product_id, 'general', 'span' ) );
+		self::assertSame( 'sanitized:', $store->get( 'general', $this->product_id, 'span' ) );
 	}
 
 	public function test_the_before_save_hook_strips_an_injected_default(): void {
@@ -607,7 +609,83 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 
 		$_POST = array( '_dws-wrwc_general_span' => '12' );
 		\do_action( 'woocommerce_process_product_meta', $this->product_id );
-		self::assertSame( array( 'raw' => '12' ), $store->get( $this->product_id, 'general', 'span' ) );
+		self::assertSame( array( 'raw' => '12' ), $store->get( 'general', $this->product_id, 'span' ) );
+	}
+
+	public function test_a_renderer_registered_custom_type_counts_as_wired_and_renders_through_the_bridge(): void {
+		$this->set_current_product( $this->product_id );
+		$store = new ProductDataFieldSurface(
+			new ProductDataFieldRenderer(
+				custom_types: array(
+					'dws_rds' => new CustomFieldType(
+						'dws_rds',
+						static fn ( SettingsField $field, mixed $value, string $name ): string => '<span class="dws-rds-bridge" data-key="' . \esc_attr( $name ) . '"></span>',
+					),
+				),
+			),
+		);
+
+		// No tab-level renderer: the renderer-registered CustomFieldType satisfies the render requirement.
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField( id: 'span', type: 'dws_rds', label: 'Span', sanitize: static fn ( mixed $v ): string => (string) $v ),
+			),
+		);
+
+		\ob_start();
+		\do_action( 'woocommerce_product_data_panels' );
+		$html = (string) \ob_get_clean();
+
+		self::assertStringContainsString( 'dws-rds-bridge', $html );
+		self::assertStringContainsString( 'data-key="_dws-wrwc_general_span"', $html );
+	}
+
+	public function test_a_tab_level_custom_renderer_wins_over_a_renderer_registered_custom_type(): void {
+		$this->set_current_product( $this->product_id );
+		$store = new ProductDataFieldSurface(
+			new ProductDataFieldRenderer(
+				custom_types: array(
+					'dws_rds' => new CustomFieldType( 'dws_rds', static fn (): string => '<span class="dws-rds-bridge"></span>' ),
+				),
+			),
+		);
+
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField( id: 'span', type: 'dws_rds', label: 'Span', sanitize: static fn ( mixed $v ): string => (string) $v ),
+				array(
+					'dws_rds' => static function ( SettingsField $field, mixed $value, string $meta_key ): void {
+						echo '<span class="dws-rds-tab"></span>';
+					},
+				),
+			),
+		);
+
+		\ob_start();
+		\do_action( 'woocommerce_product_data_panels' );
+		$html = (string) \ob_get_clean();
+
+		self::assertStringContainsString( 'dws-rds-tab', $html );
+		self::assertStringNotContainsString( 'dws-rds-bridge', $html );
+	}
+
+	public function test_a_renderer_registered_custom_type_still_requires_a_sanitize_callback(): void {
+		$store = new ProductDataFieldSurface(
+			new ProductDataFieldRenderer(
+				custom_types: array(
+					'dws_rds' => new CustomFieldType( 'dws_rds', static fn (): string => '' ),
+				),
+			),
+		);
+
+		$this->expectException( InvalidProductDataTabException::class );
+
+		// The custom-type registry is render-only, so a covered type without a field sanitize still fails.
+		$store->register_tab(
+			$this->tab_with(
+				new SettingsField( id: 'span', type: 'dws_rds', label: 'Span' ),
+			),
+		);
 	}
 
 	// endregion
@@ -618,15 +696,15 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 		$store = new ProductDataFieldSurface();
 		$store->register_tab( $this->tab() );
 
-		self::assertFalse( $store->has( $this->product_id, 'general', 'code' ) );
-		self::assertFalse( $store->delete( $this->product_id, 'general', 'code' ) );
+		self::assertFalse( $store->has( 'general', $this->product_id, 'code' ) );
+		self::assertFalse( $store->delete( 'general', $this->product_id, 'code' ) );
 
-		$store->set( $this->product_id, 'general', 'code', 'X1' );
-		self::assertTrue( $store->has( $this->product_id, 'general', 'code' ) );
-		self::assertSame( 'X1', $store->get( $this->product_id, 'general', 'code' ) );
+		$store->set( 'general', $this->product_id, 'code', 'X1' );
+		self::assertTrue( $store->has( 'general', $this->product_id, 'code' ) );
+		self::assertSame( 'X1', $store->get( 'general', $this->product_id, 'code' ) );
 
-		self::assertTrue( $store->delete( $this->product_id, 'general', 'code' ) );
-		self::assertFalse( $store->has( $this->product_id, 'general', 'code' ) );
+		self::assertTrue( $store->delete( 'general', $this->product_id, 'code' ) );
+		self::assertFalse( $store->has( 'general', $this->product_id, 'code' ) );
 	}
 
 	public function test_set_normalizes_a_checkbox_value_to_yes_no(): void {
@@ -634,9 +712,9 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 		$store->register_tab( $this->tab_with( new SettingsField( id: 'flag', type: 'checkbox', label: 'Flag' ) ) );
 
 		// A boolean written through CRUD must persist as WooCommerce's 'yes', matching the form-save path.
-		$store->set( $this->product_id, 'general', 'flag', true );
+		$store->set( 'general', $this->product_id, 'flag', true );
 
-		self::assertSame( 'yes', $store->get( $this->product_id, 'general', 'flag' ) );
+		self::assertSame( 'yes', $store->get( 'general', $this->product_id, 'flag' ) );
 	}
 
 	public function test_set_persists_a_value_equal_to_the_default(): void {
@@ -645,10 +723,10 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 
 		// Setting a field to a value that equals its default must persist a real row — matching the form save's
 		// store-all — rather than be mistaken for an injected default and stripped by the pre-save hook.
-		$store->set( $this->product_id, 'general', 'warranty-type', 'global' );
+		$store->set( 'general', $this->product_id, 'warranty-type', 'global' );
 
-		self::assertTrue( $store->has( $this->product_id, 'general', 'warranty-type' ) );
-		self::assertSame( 'global', $store->get( $this->product_id, 'general', 'warranty-type' ) );
+		self::assertTrue( $store->has( 'general', $this->product_id, 'warranty-type' ) );
+		self::assertSame( 'global', $store->get( 'general', $this->product_id, 'warranty-type' ) );
 	}
 
 	public function test_get_returns_the_descriptor_default_for_an_unstored_supported_field(): void {
@@ -657,15 +735,15 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 
 		// get() reads the descriptor default while nothing is stored, agreeing with the injected read paths and
 		// with has() reporting no real value yet.
-		self::assertFalse( $store->has( $this->product_id, 'general', 'warranty-type' ) );
-		self::assertSame( 'global', $store->get( $this->product_id, 'general', 'warranty-type' ) );
+		self::assertFalse( $store->has( 'general', $this->product_id, 'warranty-type' ) );
+		self::assertSame( 'global', $store->get( 'general', $this->product_id, 'warranty-type' ) );
 	}
 
 	public function test_get_returns_the_caller_fallback_for_an_unsupported_product(): void {
 		$store = new ProductDataFieldSurface();
 		$store->register_tab( $this->tab( supports: static fn ( int $product_id ): bool => false ) );
 
-		self::assertSame( 'na', $store->get( $this->product_id, 'general', 'warranty-type', 'na' ) );
+		self::assertSame( 'na', $store->get( 'general', $this->product_id, 'warranty-type', 'na' ) );
 	}
 
 	public function test_meta_key_derivation_and_override(): void {
@@ -688,12 +766,18 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 			),
 		);
 
-		self::assertSame( '_dws-wrwc_general_derived', $store->meta_key( 'general', 'derived' ) );
-		self::assertSame( '_legacy_v1_key', $store->meta_key( 'general', 'explicit' ) );
 		self::assertEqualsCanonicalizing(
 			array( '_dws-wrwc_general_derived', '_legacy_v1_key' ),
 			$store->meta_keys(),
 		);
+
+		// The CRUD addressing resolves to those exact keys: a write by section/field id lands on the derived
+		// key for a plain field and on the byte-exact override for a legacy one.
+		$store->set( 'general', $this->product_id, 'derived', 'd-value' );
+		$store->set( 'general', $this->product_id, 'explicit', 'e-value' );
+
+		self::assertSame( 'd-value', \get_post_meta( $this->product_id, '_dws-wrwc_general_derived', true ) );
+		self::assertSame( 'e-value', \get_post_meta( $this->product_id, '_legacy_v1_key', true ) );
 	}
 
 	public function test_a_duplicate_meta_key_is_rejected(): void {
@@ -720,7 +804,7 @@ final class ProductDataFieldSurfaceTest extends TestCase {
 
 		$this->expectException( InvalidSettingsFieldException::class );
 
-		$store->get( $this->product_id, 'general', 'nope' );
+		$store->get( 'general', $this->product_id, 'nope' );
 	}
 
 	// endregion

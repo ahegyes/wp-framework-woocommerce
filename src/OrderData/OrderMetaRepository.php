@@ -2,20 +2,39 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\OrderData;
 
+use DeepWebSolutions\Framework\Storage\ObjectMeta\MetadataRepository;
+use DeepWebSolutions\Framework\Storage\ObjectMeta\MetaType;
 use DeepWebSolutions\Framework\Storage\ObjectMeta\ObjectMetaRepositoryInterface;
 
 /**
  * Object-meta repository over WooCommerce orders.
  *
  * Reads and writes order meta through WC_Order, so a value follows the order whichever table backs it
- * under HPOS, and falls back to post meta for an object id that is not an order. The batch apply()
- * persists an order's queued writes and deletes in a single save() — and only when something changed,
- * so a no-op submission writes nothing. CRUD keys off meta_exists() rather than value truthiness.
+ * under HPOS, and delegates an object id that is not an order to the composed fallback repository. The
+ * batch apply() persists an order's queued writes and deletes in a single save() — and only when
+ * something changed, so a no-op submission writes nothing. CRUD keys off meta_exists() rather than
+ * value truthiness.
  *
  * @since   2.0.0
  * @version 2.0.0
  */
 final readonly class OrderMetaRepository implements ObjectMetaRepositoryInterface {
+	// region MAGIC METHODS
+
+	/**
+	 * Constructor.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   ObjectMetaRepositoryInterface $fallback Repository handling an object id that is not an order.
+	 */
+	public function __construct(
+		protected ObjectMetaRepositoryInterface $fallback = new MetadataRepository( MetaType::Post ),
+	) {}
+
+	// endregion
+
 	// region INHERITED METHODS
 
 	/**
@@ -31,7 +50,7 @@ final readonly class OrderMetaRepository implements ObjectMetaRepositoryInterfac
 			return $order->meta_exists( $meta_key ) ? $order->get_meta( $meta_key, true ) : $default_value;
 		}
 
-		return \metadata_exists( 'post', $object_id, $meta_key ) ? \get_post_meta( $object_id, $meta_key, true ) : $default_value;
+		return $this->fallback->get( $object_id, $meta_key, $default_value );
 	}
 
 	/**
@@ -49,11 +68,7 @@ final readonly class OrderMetaRepository implements ObjectMetaRepositoryInterfac
 			return;
 		}
 
-		// update_post_meta() unslashes both the meta key and the value; slash the key, and any string or
-		// array value, first so backslashes survive the round-trip — get()/has() look the key up raw, so a
-		// raw write would store it under a different key. Other value shapes pass through unchanged.
-		$slashed = ( \is_string( $value ) || \is_array( $value ) ) ? \wp_slash( $value ) : $value;
-		\update_post_meta( $object_id, \wp_slash( $meta_key ), $slashed );
+		$this->fallback->set( $object_id, $meta_key, $value );
 	}
 
 	/**
@@ -69,7 +84,7 @@ final readonly class OrderMetaRepository implements ObjectMetaRepositoryInterfac
 			return $order->meta_exists( $meta_key );
 		}
 
-		return \metadata_exists( 'post', $object_id, $meta_key );
+		return $this->fallback->has( $object_id, $meta_key );
 	}
 
 	/**
@@ -90,8 +105,7 @@ final readonly class OrderMetaRepository implements ObjectMetaRepositoryInterfac
 			return true;
 		}
 
-		// delete_post_meta() unslashes the key as update_post_meta() does; slash it so a backslash key matches.
-		return \delete_post_meta( $object_id, \wp_slash( $meta_key ) );
+		return $this->fallback->delete( $object_id, $meta_key );
 	}
 
 	/**
@@ -123,15 +137,7 @@ final readonly class OrderMetaRepository implements ObjectMetaRepositoryInterfac
 			return;
 		}
 
-		foreach ( $sets as $meta_key => $value ) {
-			$this->set( $object_id, (string) $meta_key, $value );
-		}
-		foreach ( $deletes as $meta_key ) {
-			// Mirror the order path: skip an absent key so the fallback runs no delete query for a never-set one.
-			if ( $this->has( $object_id, $meta_key ) ) {
-				$this->delete( $object_id, $meta_key );
-			}
-		}
+		$this->fallback->apply( $object_id, $sets, $deletes );
 	}
 
 	// endregion
