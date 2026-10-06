@@ -1,0 +1,25 @@
+{
+  "name": "ahegyes/wp-framework-woocommerce",
+  "description": "WooCommerce helpers: settings tabs and sections, product data tabs, a requirement check, a PSR-3 logger and order meta cleanup.",
+  "type": "library",
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://github.com/ahegyes/wordpress-framework",
+  "require": {
+    "php": ">=8.5",
+    "ahegyes/wp-framework-settings": "^2.0",
+    "ahegyes/wp-framework-shared": "^2.0",
+    "psr/log": "^3"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-trunk": "2.x-dev"
+    },
+    "scoping-stubs": [
+      "php-stubs/woocommerce-stubs"
+    ],
+    "requires-wp": "7.1",
+    "requires-plugins": [
+      "woocommerce"
+    ]
+  }
+}
