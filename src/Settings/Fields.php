@@ -58,7 +58,7 @@ final class Fields {
 	/**
 	 * Returns the value to store for an owned field's submission, or null, under which WooCommerce keeps the stored value.
 	 *
-	 * A disabled field is never saved. A field with validate, a render callable or the checkboxes type goes through Forms::sanitize_value(), and a rejection becomes one of WooCommerce's settings errors. Every other field keeps WooCommerce's value.
+	 * A disabled field and a field the form did not post are never saved. A field with validate, a render callable or the checkboxes type goes through Forms::sanitize_value(), and a rejection becomes one of WooCommerce's settings errors. Every other field keeps WooCommerce's value.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -73,20 +73,21 @@ final class Fields {
 		if ( Forms::is_disabled( $field ) ) {
 			return null;
 		}
-		if ( ! isset( $field['validate'] ) && ! self::is_drawn_by_forms( $field ) ) {
-			return $value;
-		}
 
-		// WooCommerce prints no hidden input before its own checkboxes and multiselects, so a cleared one posts nothing, while any other field that posts nothing was not rendered.
+		// WooCommerce prints no hidden input before its own checkboxes and multi-value selects, so a cleared one posts nothing, while any other field that posts nothing was not rendered.
 		if ( \is_null( $raw ) ) {
 			$raw = match ( $field['type'] ) {
-				'checkbox'    => 'no',
-				'multiselect' => array(),
-				default       => null,
+				'checkbox'                              => 'no',
+				'multiselect', 'multi_select_countries' => array(),
+				default                                 => null,
 			};
 			if ( \is_null( $raw ) ) {
 				return null;
 			}
+		}
+
+		if ( ! isset( $field['validate'] ) && ! self::is_drawn_by_forms( $field ) ) {
+			return $value;
 		}
 
 		$sanitized = Forms::sanitize_value( $field, $raw );
