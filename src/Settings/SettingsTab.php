@@ -1,0 +1,199 @@
+<?php declare( strict_types=1 );
+
+namespace DeepWebSolutions\Framework\WooCommerce\Settings;
+
+use DeepWebSolutions\Framework\Settings\Forms;
+use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
+
+\defined( 'ABSPATH' ) || exit;
+
+/**
+ * Adds a WooCommerce settings tab whose sections hold framework field arrays, saved through WooCommerce's settings API.
+ *
+ * WooCommerce loads its settings page class only for the woocommerce_get_settings_pages filter, so the tab is constructed in that filter's callback, which registers it. The tab owns every field of its sections after WooCommerce's settings filter, including fields other plugins add there.
+ *
+ * @since   2.0.0
+ * @version 2.0.0
+ *
+ * @phpstan-import-type Field from Forms
+ * @phpstan-type Section array{label: string, fields: \Closure(): list<Field>}
+ * @phpstan-type Tab array{label: string, sections: array<string, Section>}
+ */
+final class SettingsTab extends \WC_Settings_Page {
+	// region FIELDS AND CONSTANTS
+
+	/**
+	 * The tab's sections by id, with the default section under an empty id.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @var     array<string, Section>
+	 */
+	protected array $sections;
+
+	/**
+	 * The fields of each section WooCommerce asked for, by section id.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @var     array<string, list<Field>>
+	 */
+	protected array $fields = array();
+
+	/**
+	 * The fields the tab owns, by id.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @var     array<string, Field>
+	 */
+	protected array $owned = array();
+
+	// endregion
+
+	// region MAGIC METHODS
+
+	/**
+	 * Constructor.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   string          $id         The tab's id, which WooCommerce puts in the tab's URL.
+	 * @param   \Closure(): Tab $definition The definition, which is evaluated at construction and must not throw, while each section's fields are built when WooCommerce first asks for them.
+	 *
+	 * @throws  InvalidArgumentException Thrown when the id is not a valid key.
+	 */
+	public function __construct( string $id, \Closure $definition ) {
+		if ( ! self::is_valid_key( $id ) ) {
+			throw new InvalidArgumentException( "Settings tab id '$id' is not a lowercase letter, after an optional underscore, followed by lowercase letters, digits, underscores and hyphens." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Developer-facing, never rendered.
+		}
+
+		$tab            = $definition();
+		$this->id       = $id;
+		$this->label    = $tab['label'];
+		$this->sections = $tab['sections'];
+		parent::__construct();
+
+		\add_filter( "woocommerce_get_settings_$id", array( $this, 'claim_fields' ), \PHP_INT_MAX, 2 );
+		\add_filter( 'woocommerce_admin_settings_sanitize_option', array( $this, 'sanitize_option' ), 10, 3 );
+	}
+
+	// endregion
+
+	// region INHERITED METHODS
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @return  array<string, string>
+	 */
+	#[\Override]
+	protected function get_own_sections(): array {
+		return \array_map( static fn ( array $section ): string => $section['label'], $this->sections );
+	}
+
+	/**
+	 * Returns the fields of one of the tab's sections, built on first request, or those of a section another plugin registered on the tab.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   mixed $section_id The section's id.
+	 *
+	 * @return  array<mixed>
+	 */
+	#[\Override]
+	protected function get_settings_for_section_core( $section_id ): array {
+		$section_id = \is_string( $section_id ) ? $section_id : '';
+		if ( ! isset( $this->sections[ $section_id ] ) ) {
+			return parent::get_settings_for_section_core( $section_id );
+		}
+
+		return $this->fields[ $section_id ] ??= ( $this->sections[ $section_id ]['fields'] )();
+	}
+
+	// endregion
+
+	// region HOOKS
+
+	/**
+	 * Takes ownership of the fields of the tab's own section, as WooCommerce's settings filter leaves them.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   array<mixed> $settings   The section's settings.
+	 * @param   string       $section_id The section's id.
+	 *
+	 * @return  array<mixed>
+	 */
+	public function claim_fields( array $settings, string $section_id ): array {
+		if ( isset( $this->sections[ $section_id ] ) ) {
+			Fields::claim( $settings, $this->owned, array( $this, 'render_field' ) );
+		}
+
+		return $settings;
+	}
+
+	/**
+	 * Returns the value to store for a field the tab owns, and any other option's value unchanged.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   mixed $value  WooCommerce's value for the option.
+	 * @param   mixed $option The option's setting.
+	 * @param   mixed $raw    The option's unslashed submission.
+	 *
+	 * @return  mixed
+	 */
+	public function sanitize_option( mixed $value, mixed $option, mixed $raw ): mixed {
+		$field = \is_array( $option ) && \is_string( $option['id'] ?? null ) ? ( $this->owned[ $option['id'] ] ?? null ) : null;
+
+		return \is_null( $field ) ? $value : Fields::sanitize_option( $field, $value, $raw );
+	}
+
+	/**
+	 * Prints the row of a field the tab owns whose type WooCommerce leaves to an action.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   array<mixed> $field The field as WooCommerce prepared it for its row.
+	 */
+	public function render_field( array $field ): void {
+		$owned = \is_string( $field['id'] ?? null ) ? ( $this->owned[ $field['id'] ] ?? null ) : null;
+		if ( ! \is_null( $owned ) ) {
+			Fields::render_row( $owned, $field );
+		}
+	}
+
+	// endregion
+
+	// region HELPERS
+
+	/**
+	 * Returns whether the key is valid as a helper id.
+	 *
+	 * The pattern accepts every v1 option key, meta key, prefix and slug, so that ports keep their keys.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   string $key The key.
+	 *
+	 * @return  bool
+	 */
+	protected static function is_valid_key( string $key ): bool {
+		return 1 === \preg_match( '/\A_?[a-z][a-z0-9_-]*\z/', $key );
+	}
+
+	// endregion
+}
