@@ -78,7 +78,7 @@ final class SettingsSection extends WooCommerceSettingsSection {
 
 	// endregion
 
-	// region GETTERS
+	// region INHERITED METHODS
 
 	/**
 	 * {@inheritDoc}
