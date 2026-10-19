@@ -10,6 +10,11 @@
     "ahegyes/wp-framework-shared": "^2.0",
     "psr/log": "^3"
   },
+  "autoload": {
+    "psr-4": {
+      "DeepWebSolutions\\Framework\\WooCommerce\\": "src/"
+    }
+  },
   "extra": {
     "branch-alias": {
       "dev-trunk": "2.x-dev"
@@ -17,6 +22,7 @@
     "scoping-stubs": [
       "php-stubs/woocommerce-stubs"
     ],
+    "scoping-text-domain": "wp-framework",
     "requires-wp": "7.1",
     "requires-plugins": [
       "woocommerce"
