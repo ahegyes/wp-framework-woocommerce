@@ -61,7 +61,7 @@ final class ProductDataTab {
 	// region METHODS
 
 	/**
-	 * Registers the hooks that add the tab and print its panel.
+	 * Registers the hooks that add the tab, print its panel and save its fields.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -69,6 +69,7 @@ final class ProductDataTab {
 	public function register_hooks(): void {
 		\add_filter( 'woocommerce_product_data_tabs', array( $this, 'add_tab' ) );
 		\add_action( 'woocommerce_product_data_panels', array( $this, 'render_panel' ) );
+		\add_action( 'woocommerce_admin_process_product_object', array( $this, 'save_fields' ) );
 	}
 
 	// endregion
@@ -123,6 +124,48 @@ final class ProductDataTab {
 			echo '</div>';
 		}
 		echo '</div>';
+	}
+
+	/**
+	 * Sets the accepted fields of the edit form's submission on the product WooCommerce is about to save, for a product the tab supports.
+	 *
+	 * A field the form did not post, because it was not rendered or is disabled, keeps its stored value, and a rejected field keeps its stored value and adds one of WooCommerce's meta box errors that names it.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   \WC_Product $product The product being saved.
+	 */
+	public function save_fields( \WC_Product $product ): void {
+		if ( ! $this->supports( $product ) ) {
+			return;
+		}
+
+		$fields = array();
+		foreach ( $this->get_groups( $product ) as $group ) {
+			foreach ( self::get_fields( $group, $product ) as $field ) {
+				if ( isset( $field['id'] ) ) {
+					$fields[ $field['id'] ] = $field;
+				}
+			}
+		}
+
+		$posted    = \wp_unslash( $_POST ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce verifies its meta box nonce and the edit_post capability before it fires this action, and Forms::sanitize_fields() sanitizes each field.
+		$submitted = array();
+		foreach ( $fields as $id => $field ) {
+			if ( \array_key_exists( self::get_key( $field ), $posted ) ) {
+				$submitted[ $id ] = $posted[ self::get_key( $field ) ];
+			}
+		}
+
+		$result = Forms::sanitize_fields( \array_values( $fields ), $submitted );
+		foreach ( $result['values'] as $id => $value ) {
+			$product->update_meta_data( self::get_key( $fields[ $id ] ), $value ); // @phpstan-ignore argument.type (WooCommerce stores any value its data store can serialize, though its docblock lists only strings and arrays.)
+		}
+		foreach ( $result['errors'] as $id => $error ) {
+			// WooCommerce prints its meta box errors through wp_kses_post(), which would keep markup from a label or a rejection's message.
+			\WC_Admin_Meta_Boxes::add_error( \esc_html( self::get_rejection_message( $fields[ $id ], $error ) ) );
+		}
 	}
 
 	// endregion
@@ -282,6 +325,29 @@ final class ProductDataTab {
 	 */
 	protected static function get_key( array $field ): string {
 		return \rtrim( $field['name'] ?? $field['id'] ?? '', '[]' );
+	}
+
+	/**
+	 * Returns the meta box error for a rejected field, which names the field and adds the rejection's message when it has one.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   ProductField $field The field.
+	 * @param   \WP_Error    $error The rejection.
+	 *
+	 * @return  string
+	 */
+	protected static function get_rejection_message( array $field, \WP_Error $error ): string {
+		$name    = self::get_title( $field );
+		$message = $error->get_error_message();
+		if ( '' === $message ) {
+			/* translators: %s: The field's title. */
+			return \sprintf( \__( '%s was not saved because its value is not valid, so it keeps its previous value.', 'wp-framework' ), $name );
+		}
+
+		/* translators: 1: The field's title. 2: What to enter instead. */
+		return \sprintf( \__( '%1$s was not saved, so it keeps its previous value. %2$s', 'wp-framework' ), $name, $message );
 	}
 
 	/**
