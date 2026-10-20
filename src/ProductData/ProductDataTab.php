@@ -10,7 +10,7 @@ use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
 /**
  * Adds a tab to WooCommerce's product data box whose panel edits product meta through field arrays.
  *
- * Fields take the arguments of WooCommerce's woocommerce_wp_* functions, which draw the built-in types, plus a type, a default, validate and render, and each stores under its name, or its id, without brackets. A field with a render callable and a checkboxes group print in WooCommerce's row around Forms::render_control(), so render returns its control as inline content, escapes, names and describes it, and prints a hidden empty input before it unless the field is disabled.
+ * Fields take the arguments of WooCommerce's woocommerce_wp_* functions, which draw the built-in types, plus a type, a default, validate and render, and each stores under its name, or its id, without brackets. A field with a render callable and a checkboxes group print in WooCommerce's row around Forms::render_control(), and that row is a paragraph, so render returns its control as inline content, escapes, names and describes it, and prints a hidden empty input before it unless the field is disabled.
  *
  * @since   2.0.0
  * @version 2.0.0
@@ -268,8 +268,12 @@ final class ProductDataTab {
 		}
 
 		switch ( $field['type'] ) {
-			case 'text':
 			case 'number':
+				// The default step of 1 would make a stored decimal invalid, and the browser would then refuse to submit the product.
+				$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + array( 'step' => 'any' );
+				\woocommerce_wp_text_input( $field );
+				break;
+			case 'text':
 			case 'email':
 			case 'url':
 				\woocommerce_wp_text_input( $field );
