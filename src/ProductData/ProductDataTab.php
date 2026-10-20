@@ -268,14 +268,18 @@ final class ProductDataTab {
 		}
 
 		switch ( $field['type'] ) {
-			case 'number':
-				// The default step of 1 would make a stored decimal invalid, and the browser would then refuse to submit the product.
-				$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + array( 'step' => 'any' );
-				\woocommerce_wp_text_input( $field );
-				break;
 			case 'text':
+			case 'number':
 			case 'email':
 			case 'url':
+				// WooCommerce prints the value through esc_attr(), which leaves existing entities as they are, so the browser would decode a stored entity and the next save would store it decoded.
+				if ( \is_string( $field['value'] ) ) {
+					$field['value'] = \str_replace( '&', '&amp;', $field['value'] );
+				}
+				if ( 'number' === $field['type'] ) {
+					// The default step of 1 would make a stored decimal invalid, and the browser would then refuse to submit the product.
+					$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + array( 'step' => 'any' );
+				}
 				\woocommerce_wp_text_input( $field );
 				break;
 			case 'textarea':
