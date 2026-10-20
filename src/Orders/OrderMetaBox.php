@@ -74,6 +74,7 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 
 		$this->form = $form;
 		\add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ), 10, 2 );
+		\add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_meta_box' ), 35 );
 	}
 
 	/**
@@ -149,6 +150,20 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 */
 	public function render_meta_box( mixed $order ): void {
 		$this->form->render( self::get_order_id( $order ) );
+	}
+
+	/**
+	 * Saves the form when WooCommerce saves an order from its edit screen, before WooCommerce saves the order's data, so that a status change and its emails see the form's values.
+	 *
+	 * WooCommerce fires the hook for every order type, and only the box's own screens print the form's nonce.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   int $order_id The saved order's id.
+	 */
+	public function save_meta_box( int $order_id ): void {
+		$this->form->save( $order_id );
 	}
 
 	// endregion
