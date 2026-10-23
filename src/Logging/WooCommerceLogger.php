@@ -3,7 +3,7 @@
 namespace DeepWebSolutions\Framework\WooCommerce\Logging;
 
 use Automattic\WooCommerce\Utilities\LoggingUtil;
-use Psr\Log\AbstractLogger as PsrAbstractLogger;
+use DeepWebSolutions\Framework\Core\Logging\AbstractLogger;
 use Psr\Log\InvalidArgumentException as PsrInvalidArgumentException;
 use Psr\Log\LogLevel as PsrLogLevel;
 
@@ -15,27 +15,8 @@ use Psr\Log\LogLevel as PsrLogLevel;
  * @since   2.0.0
  * @version 2.0.0
  */
-final class WooCommerceLogger extends PsrAbstractLogger {
+final class WooCommerceLogger extends AbstractLogger {
 	// region FIELDS AND CONSTANTS
-
-	/**
-	 * The severity of each level, as WooCommerce ranks them.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @var     array<string, int>
-	 */
-	protected const array SEVERITIES = array(
-		PsrLogLevel::EMERGENCY => 800,
-		PsrLogLevel::ALERT     => 700,
-		PsrLogLevel::CRITICAL  => 600,
-		PsrLogLevel::ERROR     => 500,
-		PsrLogLevel::WARNING   => 400,
-		PsrLogLevel::NOTICE    => 300,
-		PsrLogLevel::INFO      => 200,
-		PsrLogLevel::DEBUG     => 100,
-	);
 
 	/**
 	 * The severity of the lowest level the threshold logs, or null for the WP_DEBUG default.
@@ -69,7 +50,7 @@ final class WooCommerceLogger extends PsrAbstractLogger {
 		protected ?\WC_Logger_Interface $logger = null
 	) {
 		if ( ! \is_null( $threshold ) ) {
-			$this->floor = self::SEVERITIES[ $threshold ] ?? throw new PsrInvalidArgumentException( "Log level '$threshold' is not a PSR-3 level." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Developer-facing, never rendered.
+			$this->floor = self::get_severity( $threshold );
 		}
 	}
 
@@ -93,58 +74,23 @@ final class WooCommerceLogger extends PsrAbstractLogger {
 	 */
 	#[\Override]
 	public function log( mixed $level, string|\Stringable $message, array $context = array() ): void {
-		$severity = \is_string( $level ) ? ( self::SEVERITIES[ $level ] ?? null ) : null;
-		if ( \is_null( $severity ) ) {
-			throw new PsrInvalidArgumentException( "Log level '" . ( \is_string( $level ) ? $level : \get_debug_type( $level ) ) . "' is not a PSR-3 level." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Developer-facing, never rendered.
-		}
-		if ( $severity < ( $this->floor ?? ( \defined( 'WP_DEBUG' ) && WP_DEBUG ? self::SEVERITIES[ PsrLogLevel::DEBUG ] : self::SEVERITIES[ PsrLogLevel::WARNING ] ) ) ) {
+		$severity = self::get_severity( $level );
+		if ( $severity < ( $this->floor ?? self::get_default_threshold() ) ) {
 			return;
 		}
 
-		$message        = $this->interpolate( (string) $message, $context );
+		$message        = self::interpolate( (string) $message, $context );
 		$this->logger ??= \function_exists( 'wc_get_logger' ) ? \wc_get_logger() : null;
 		$this->logger?->log( $level, $message, array( 'source' => $this->source ) + self::encode_context( $context ) );
 
 		if ( $severity >= self::SEVERITIES[ PsrLogLevel::ERROR ] && self::is_dropped_by_woocommerce( $severity ) ) {
-			$exception = $context['exception'] ?? null;
-			\error_log( "[$this->source.$level] $message" . ( $exception instanceof \Throwable ? "\n$exception" : '' ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Errors must stay visible when WooCommerce drops them.
+			\error_log( self::format_record( $this->source, $level, $message, $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Errors must stay visible when WooCommerce drops them.
 		}
 	}
 
 	// endregion
 
 	// region HELPERS
-
-	/**
-	 * Replaces each {key} placeholder in the message with its scalar, null or Stringable context value.
-	 *
-	 * Only the values the message uses are cast, and a placeholder whose value throws while casting stays as it is, because PSR-3 forbids a context value from making logging fail.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   string       $message The message with placeholders.
-	 * @param   array<mixed> $context The values to interpolate.
-	 *
-	 * @return  string
-	 */
-	protected function interpolate( string $message, array $context ): string {
-		$replacements = array();
-		foreach ( $context as $key => $value ) {
-			$placeholder = '{' . $key . '}';
-			if ( ! \str_contains( $message, $placeholder ) || ! ( \is_null( $value ) || \is_scalar( $value ) || $value instanceof \Stringable ) ) {
-				continue;
-			}
-
-			try {
-				$replacements[ $placeholder ] = (string) $value;
-			} catch ( \Throwable ) {
-				continue;
-			}
-		}
-
-		return \strtr( $message, $replacements );
-	}
 
 	/**
 	 * Returns the context with a Throwable under the exception key written as a string, and each value that does not encode as JSON replaced by its type.
@@ -189,7 +135,7 @@ final class WooCommerceLogger extends PsrAbstractLogger {
 	 * @return  bool
 	 */
 	protected static function is_dropped_by_woocommerce( int $severity ): bool {
-		return ! \class_exists( LoggingUtil::class ) || ! LoggingUtil::logging_is_enabled() || ( self::SEVERITIES[ LoggingUtil::get_level_threshold() ] ?? 0 ) > $severity;
+		return ! \class_exists( LoggingUtil::class ) || ! LoggingUtil::logging_is_enabled() || \WC_Log_Levels::get_level_severity( LoggingUtil::get_level_threshold() ) > $severity;
 	}
 
 	// endregion
