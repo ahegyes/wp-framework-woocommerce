@@ -127,7 +127,7 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 		}
 
 		// WordPress prints a box's title as markup, so the title goes in as the form defines it.
-		\add_meta_box( $this->form->get_id(), $this->form->get_title(), array( $this, 'render_meta_box' ), $screen_id, $this->context, $this->priority );
+		\add_meta_box( $this->form->get_id(), $this->form->get_title( $order_id ), array( $this, 'render_meta_box' ), $screen_id, $this->context, $this->priority );
 	}
 
 	/**
