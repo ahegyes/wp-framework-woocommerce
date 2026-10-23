@@ -51,9 +51,7 @@ final class ProductDataTab {
 		protected string $id,
 		protected \Closure $definition
 	) {
-		if ( ! self::is_valid_key( $id ) ) {
-			throw new InvalidArgumentException( "Product data tab id '$id' is not a lowercase letter, after an optional underscore, followed by lowercase letters, digits, underscores and hyphens." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Developer-facing, never rendered.
-		}
+		Forms::check_helper_id( $id );
 	}
 
 	// endregion
@@ -164,7 +162,7 @@ final class ProductDataTab {
 		}
 		foreach ( $result['errors'] as $id => $error ) {
 			// WooCommerce prints its meta box errors through wp_kses_post(), which would keep markup from a label or a rejection's message.
-			\WC_Admin_Meta_Boxes::add_error( \esc_html( self::get_rejection_message( $fields[ $id ], $error ) ) );
+			\WC_Admin_Meta_Boxes::add_error( \esc_html( Forms::get_rejection_message( self::get_title( $fields[ $id ] ), $error ) ) );
 		}
 	}
 
@@ -272,14 +270,11 @@ final class ProductDataTab {
 			case 'number':
 			case 'email':
 			case 'url':
-				// WooCommerce prints the value through esc_attr(), which leaves existing entities as they are, so the browser would decode a stored entity and the next save would store it decoded.
+				// WooCommerce prints the value through esc_attr(), which leaves an escaped value unchanged.
 				if ( \is_string( $field['value'] ) ) {
-					$field['value'] = \str_replace( '&', '&amp;', $field['value'] );
+					$field['value'] = Forms::escape_attribute( $field['value'] );
 				}
-				if ( 'number' === $field['type'] ) {
-					// The default step of 1 would make a stored decimal invalid, and the browser would then refuse to submit the product.
-					$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + array( 'step' => 'any' );
-				}
+				$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + ( Forms::DEFAULT_CUSTOM_ATTRIBUTES[ $field['type'] ] ?? array() );
 				\woocommerce_wp_text_input( $field );
 				break;
 			case 'textarea':
@@ -290,7 +285,7 @@ final class ProductDataTab {
 				if ( Forms::is_disabled( $field ) ) {
 					$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + array( 'disabled' => 'disabled' );
 				} else {
-					$field['unchecked_value'] = 'no';
+					echo Forms::render_hidden_input( $key, 'no' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_hidden_input() escapes the input.
 				}
 				\woocommerce_wp_checkbox( array( 'checked_value' => 'yes' ) + $field );
 				break;
@@ -299,7 +294,7 @@ final class ProductDataTab {
 				break;
 			case 'multiselect':
 				if ( ! Forms::is_disabled( $field ) ) {
-					echo '<input type="hidden" name="' . \esc_attr( $key ) . '" value="" />';
+					echo Forms::render_hidden_input( $key, '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_hidden_input() escapes the input.
 				}
 				$field['name']              = "{$key}[]";
 				$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + array( 'multiple' => 'multiple' );
@@ -336,29 +331,6 @@ final class ProductDataTab {
 	}
 
 	/**
-	 * Returns the meta box error for a rejected field, which names the field and adds the rejection's message when it has one.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   ProductField $field The field.
-	 * @param   \WP_Error    $error The rejection.
-	 *
-	 * @return  string
-	 */
-	protected static function get_rejection_message( array $field, \WP_Error $error ): string {
-		$name    = self::get_title( $field );
-		$message = $error->get_error_message();
-		if ( '' === $message ) {
-			/* translators: %s: The field's title. */
-			return \sprintf( \__( '%s was not saved because its value is not valid, so it keeps its previous value.', 'wp-framework' ), $name );
-		}
-
-		/* translators: 1: The field's title. 2: What to enter instead. */
-		return \sprintf( \__( '%1$s was not saved, so it keeps its previous value. %2$s', 'wp-framework' ), $name, $message );
-	}
-
-	/**
 	 * Returns the field's label, or its id when the label is empty, so that every row and rejection names its field.
 	 *
 	 * @since   2.0.0
@@ -369,7 +341,7 @@ final class ProductDataTab {
 	 * @return  string
 	 */
 	protected static function get_title( array $field ): string {
-		return '' !== ( $field['label'] ?? '' ) ? $field['label'] : ( $field['id'] ?? '' );
+		return Forms::get_title( array( 'title' => $field['label'] ?? '' ) + $field );
 	}
 
 	/**
@@ -384,22 +356,6 @@ final class ProductDataTab {
 		$product = $GLOBALS['product_object'] ?? null;
 
 		return $product instanceof \WC_Product ? $product : null;
-	}
-
-	/**
-	 * Returns whether the key is valid as a helper id.
-	 *
-	 * The pattern accepts every v1 option key, meta key, prefix and slug, so that ports keep their keys.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   string $key The key.
-	 *
-	 * @return  bool
-	 */
-	protected static function is_valid_key( string $key ): bool {
-		return 1 === \preg_match( '/\A_?[a-z][a-z0-9_-]*\z/', $key );
 	}
 
 	// endregion

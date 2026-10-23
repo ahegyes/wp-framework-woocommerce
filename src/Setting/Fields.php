@@ -92,7 +92,8 @@ final class Fields {
 
 		$sanitized = Forms::sanitize_value( $field, $raw );
 		if ( \is_wp_error( $sanitized ) ) {
-			\WC_Admin_Settings::add_error( self::get_rejection_message( $field, $sanitized ) );
+			// The message is plain text, because WooCommerce escapes its settings errors when it prints them.
+			\WC_Admin_Settings::add_error( Forms::get_rejection_message( Forms::get_title( $field ), $sanitized ) );
 			return null;
 		}
 
@@ -110,7 +111,7 @@ final class Fields {
 	 */
 	public static function render_row( array $field, array $resolved ): void {
 		$id             = $field['id'] ?? '';
-		$field['title'] = self::get_title( $field );
+		$field['title'] = Forms::get_title( $field );
 		$name           = \is_string( $resolved['field_name'] ?? null ) && '' !== $resolved['field_name'] ? $resolved['field_name'] : $id;
 		$row_class      = \is_string( $resolved['row_class'] ?? null ) ? $resolved['row_class'] : '';
 
@@ -154,45 +155,6 @@ final class Fields {
 	 */
 	protected static function is_drawn_by_forms( array $field ): bool {
 		return isset( $field['render'] ) || 'checkboxes' === $field['type'];
-	}
-
-	/**
-	 * Returns the settings error for a rejected field, which names the field and adds the rejection's message when it has one.
-	 *
-	 * The message is plain text, because WooCommerce escapes its settings errors when it prints them.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   Field     $field The field.
-	 * @param   \WP_Error $error The rejection.
-	 *
-	 * @return  string
-	 */
-	protected static function get_rejection_message( array $field, \WP_Error $error ): string {
-		$name    = self::get_title( $field );
-		$message = $error->get_error_message();
-		if ( '' === $message ) {
-			/* translators: %s: The field's title. */
-			return \sprintf( \__( '%s was not saved because its value is not valid, so it keeps its previous value.', 'wp-framework' ), $name );
-		}
-
-		/* translators: 1: The field's title. 2: What to enter instead. */
-		return \sprintf( \__( '%1$s was not saved, so it keeps its previous value. %2$s', 'wp-framework' ), $name, $message );
-	}
-
-	/**
-	 * Returns the field's title, or its id when the title is empty, so that every row label, legend and settings error names its field.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   Field $field The field.
-	 *
-	 * @return  string
-	 */
-	protected static function get_title( array $field ): string {
-		return '' !== ( $field['title'] ?? '' ) ? $field['title'] : ( $field['id'] ?? '' );
 	}
 
 	// endregion

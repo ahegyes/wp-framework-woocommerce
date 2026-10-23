@@ -2,10 +2,10 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\EditScreen\Hosts;
 
+use DeepWebSolutions\Framework\Settings\EditScreen\Hosts\PostMetaBox;
 use DeepWebSolutions\Framework\Settings\EditScreen\ObjectForm;
 use DeepWebSolutions\Framework\Settings\EditScreen\ObjectFormHostInterface;
 use DeepWebSolutions\Framework\Settings\EditScreen\ObjectStoreInterface;
-use DeepWebSolutions\Framework\Shared\Exception\LogicException;
 use DeepWebSolutions\Framework\WooCommerce\EditScreen\Stores\OrderMetaStore;
 
 \defined( 'ABSPATH' ) || exit;
@@ -64,15 +64,9 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
-	 *
-	 * @throws  LogicException Thrown when the box already hosts another form.
 	 */
 	#[\Override]
 	public function register_hooks( ObjectForm $form ): void {
-		if ( isset( $this->form ) && $form !== $this->form ) {
-			throw new LogicException( "Order meta box of '{$this->form->get_id()}' cannot also host '{$form->get_id()}'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Developer-facing, never rendered.
-		}
-
 		$this->form = $form;
 		\add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ), 10, 2 );
 		\add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_meta_box' ), 35 );
@@ -108,13 +102,7 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 */
 	#[\Override]
 	public function render_rows( string $title, array $rows ): void {
-		foreach ( $rows as $row ) {
-			if ( \is_null( $row['label_for'] ) ) {
-				echo '<fieldset class="form-field"><legend class="post-attributes-label">' . $row['title'] . '</legend>' . $row['control'] . '</fieldset>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The form escapes titles and controls.
-			} else {
-				echo '<div class="form-field"><p class="post-attributes-label-wrapper"><label class="post-attributes-label" for="' . \esc_attr( $row['label_for'] ) . '">' . $row['title'] . '</label></p>' . $row['control'] . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The form escapes titles and controls.
-			}
-		}
+		( new PostMetaBox( array() ) )->render_rows( $title, $rows );
 	}
 
 	// endregion

@@ -71,9 +71,7 @@ final class SettingsSection extends WooCommerceSettingsSection {
 		protected string $id,
 		protected \Closure $definition
 	) {
-		if ( ! self::is_valid_key( $id ) ) {
-			throw new InvalidArgumentException( "Settings section id '$id' is not a lowercase letter, after an optional underscore, followed by lowercase letters, digits, underscores and hyphens." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Developer-facing, never rendered.
-		}
+		Forms::check_helper_id( $id );
 	}
 
 	// endregion
@@ -203,22 +201,6 @@ final class SettingsSection extends WooCommerceSettingsSection {
 	 */
 	protected function get_section(): array {
 		return $this->section ??= ( $this->definition )();
-	}
-
-	/**
-	 * Returns whether the key is valid as a helper id.
-	 *
-	 * The pattern accepts every v1 option key, meta key, prefix and slug, so that ports keep their keys.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   string $key The key.
-	 *
-	 * @return  bool
-	 */
-	protected static function is_valid_key( string $key ): bool {
-		return 1 === \preg_match( '/\A_?[a-z][a-z0-9_-]*\z/', $key );
 	}
 
 	// endregion
