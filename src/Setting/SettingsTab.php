@@ -16,19 +16,18 @@ use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
  * @version 2.0.0
  *
  * @phpstan-import-type Field from Forms
- * @phpstan-type Section array{label: string, fields: \Closure(): list<Field>}
- * @phpstan-type Tab array{label: string, sections: array<string, Section>}
+ * @phpstan-type Tab array{label: string, sections: array<string, string>}
  */
 final class SettingsTab extends \WC_Settings_Page {
 	// region FIELDS AND CONSTANTS
 
 	/**
-	 * The tab's sections by id, with the default section under an empty id.
+	 * The labels of the tab's sections by id, with the default section under an empty id.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @var     array<string, Section>
+	 * @var     array<string, string>
 	 */
 	protected array $sections;
 
@@ -62,15 +61,19 @@ final class SettingsTab extends \WC_Settings_Page {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   string          $id         The tab's id, which WooCommerce puts in the tab's URL.
-	 * @param   \Closure(): Tab $definition The definition, which is evaluated at construction and must not throw, while each section's fields are built when WooCommerce first asks for them.
+	 * @param   string                           $id         The tab's id, which WooCommerce puts in the tab's URL.
+	 * @param   Tab                              $tab        The tab's label and the labels of its sections by id.
+	 * @param   SectionFieldsDefinitionInterface $definition The definition of the sections' fields, which the tab asks for once per section, when WooCommerce first asks for them.
 	 *
 	 * @throws  InvalidArgumentException Thrown when the id is not a valid key.
 	 */
-	public function __construct( string $id, \Closure $definition ) {
+	public function __construct(
+		string $id,
+		array $tab,
+		protected SectionFieldsDefinitionInterface $definition
+	) {
 		Forms::check_helper_id( $id );
 
-		$tab            = $definition();
 		$this->id       = $id;
 		$this->label    = $tab['label'];
 		$this->sections = $tab['sections'];
@@ -94,7 +97,7 @@ final class SettingsTab extends \WC_Settings_Page {
 	 */
 	#[\Override]
 	protected function get_own_sections(): array {
-		return \array_map( static fn ( array $section ): string => $section['label'], $this->sections );
+		return $this->sections;
 	}
 
 	/**
@@ -114,7 +117,7 @@ final class SettingsTab extends \WC_Settings_Page {
 			return parent::get_settings_for_section_core( $section_id );
 		}
 
-		return $this->fields[ $section_id ] ??= ( $this->sections[ $section_id ]['fields'] )();
+		return $this->fields[ $section_id ] ??= $this->definition->get_section_fields( $this->id, $section_id );
 	}
 
 	// endregion

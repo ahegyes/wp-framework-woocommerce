@@ -17,20 +17,10 @@ use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
  * @version 2.0.0
  *
  * @phpstan-import-type Field from Forms
- * @phpstan-type Section array{tab: string, label: string, fields: \Closure(): list<Field>}
+ * @phpstan-type Section array{tab: string, label: string}
  */
 final class SettingsSection extends WooCommerceSettingsSection {
 	// region FIELDS AND CONSTANTS
-
-	/**
-	 * The section's definition, evaluated on first use.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @var     Section|null
-	 */
-	protected ?array $section = null;
 
 	/**
 	 * The section's fields, built when WooCommerce first asks for them.
@@ -62,14 +52,16 @@ final class SettingsSection extends WooCommerceSettingsSection {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   string              $id         The section's id, which WooCommerce puts in the section's URL.
-	 * @param   \Closure(): Section $definition The definition, which is evaluated on first use and must not throw.
+	 * @param   string                           $id         The section's id, which WooCommerce puts in the section's URL.
+	 * @param   Section                          $section    The id of the tab the section belongs to, and the section's label.
+	 * @param   SectionFieldsDefinitionInterface $definition The definition of the section's fields, which the section asks for once, when WooCommerce first asks for them.
 	 *
 	 * @throws  InvalidArgumentException Thrown when the id is not a valid key.
 	 */
 	public function __construct(
 		protected string $id,
-		protected \Closure $definition
+		protected array $section,
+		protected SectionFieldsDefinitionInterface $definition
 	) {
 		Forms::check_helper_id( $id );
 		$this->owner = new Fields( array( $id => true ) );
@@ -87,7 +79,7 @@ final class SettingsSection extends WooCommerceSettingsSection {
 	 */
 	#[\Override]
 	public function get_parent_page_id(): string {
-		return $this->get_section()['tab'];
+		return $this->section['tab'];
 	}
 
 	/**
@@ -109,7 +101,7 @@ final class SettingsSection extends WooCommerceSettingsSection {
 	 */
 	#[\Override]
 	public function get_label(): string {
-		return $this->get_section()['label'];
+		return $this->section['label'];
 	}
 
 	/**
@@ -128,23 +120,7 @@ final class SettingsSection extends WooCommerceSettingsSection {
 	public function get_settings( \WC_Settings_Page $parent_page ): array {
 		$this->owner->register_hooks( $this->get_parent_page_id() );
 
-		return $this->fields ??= ( $this->get_section()['fields'] )();
-	}
-
-	// endregion
-
-	// region HELPERS
-
-	/**
-	 * Returns the section's definition, evaluating it on first use.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @return  Section
-	 */
-	protected function get_section(): array {
-		return $this->section ??= ( $this->definition )();
+		return $this->fields ??= $this->definition->get_section_fields( $this->get_parent_page_id(), $this->id );
 	}
 
 	// endregion

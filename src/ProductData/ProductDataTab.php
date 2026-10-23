@@ -16,21 +16,21 @@ use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
  * @version 2.0.0
  *
  * @phpstan-type ProductField array{type: string, id?: string, label?: string, description?: string, desc_tip?: bool, name?: string, default?: mixed, options?: array<int|string, string>, placeholder?: string, class?: string, style?: string, wrapper_class?: string, custom_attributes?: array<string, scalar>, disabled?: bool|list<int|string>, validate?: callable(mixed): mixed, render?: callable(array<string, mixed>, mixed, string, string): string}
- * @phpstan-type Group array{class?: list<string>, fields: list<ProductField>|\Closure(\WC_Product): list<ProductField>}
- * @phpstan-type Tab array{label: string, priority?: int, class?: list<string>, supports?: \Closure(\WC_Product): bool, groups: list<Group>}
+ * @phpstan-type Group array{class?: list<string>, fields: list<ProductField>}
+ * @phpstan-type Tab array{label: string, priority?: int, class?: list<string>, groups: list<Group>}
  */
 final class ProductDataTab {
 	// region FIELDS AND CONSTANTS
 
 	/**
-	 * The tab's definition, evaluated on first use.
+	 * The tab of each product the request has resolved, or null where the tab does not apply, keyed by the product's id.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @var     Tab|null
+	 * @var     array<int, Tab|null>
 	 */
-	protected ?array $tab = null;
+	protected array $tabs = array();
 
 	// endregion
 
@@ -42,14 +42,14 @@ final class ProductDataTab {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   string          $id         The tab's key among the product data tabs, which also prefixes its panel's HTML id and its groups filter.
-	 * @param   \Closure(): Tab $definition The definition, which is evaluated on first use after init and must not throw.
+	 * @param   string                            $id         The tab's key among the product data tabs, which also prefixes its panel's HTML id and its groups filter.
+	 * @param   ProductDataTabDefinitionInterface $definition The definition, which the tab asks for once per product, on first use after init.
 	 *
 	 * @throws  InvalidArgumentException Thrown when the id is not a valid key.
 	 */
 	public function __construct(
 		protected string $id,
-		protected \Closure $definition
+		protected ProductDataTabDefinitionInterface $definition
 	) {
 		Forms::check_helper_id( $id );
 	}
@@ -75,7 +75,7 @@ final class ProductDataTab {
 	// region HOOKS
 
 	/**
-	 * Adds the tab for a product the tab supports.
+	 * Adds the tab for a product the tab applies to.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -86,11 +86,11 @@ final class ProductDataTab {
 	 */
 	public function add_tab( array $tabs ): array {
 		$product = self::get_edited_product();
-		if ( \is_null( $product ) || ! $this->supports( $product ) ) {
+		$tab     = \is_null( $product ) ? null : $this->get_tab( $product );
+		if ( \is_null( $tab ) ) {
 			return $tabs;
 		}
 
-		$tab               = $this->get_tab();
 		$tabs[ $this->id ] = array(
 			'label'    => $tab['label'],
 			'target'   => "{$this->id}_product_data",
@@ -102,21 +102,22 @@ final class ProductDataTab {
 	}
 
 	/**
-	 * Prints the panel of a product the tab supports, with one options group per group.
+	 * Prints the panel of a product the tab applies to, with one options group per group.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 */
 	public function render_panel(): void {
 		$product = self::get_edited_product();
-		if ( \is_null( $product ) || ! $this->supports( $product ) ) {
+		$tab     = \is_null( $product ) ? null : $this->get_tab( $product );
+		if ( \is_null( $product ) || \is_null( $tab ) ) {
 			return;
 		}
 
 		echo '<div id="' . \esc_attr( "{$this->id}_product_data" ) . '" class="panel woocommerce_options_panel hidden">';
-		foreach ( $this->get_groups( $product ) as $group ) {
+		foreach ( $this->get_groups( $tab, $product ) as $group ) {
 			echo '<div class="' . \esc_attr( \implode( ' ', \array_merge( array( 'options_group' ), $group['class'] ?? array() ) ) ) . '">';
-			foreach ( self::get_fields( $group, $product ) as $field ) {
+			foreach ( $group['fields'] as $field ) {
 				self::render_field( $field, $product );
 			}
 			echo '</div>';
@@ -125,7 +126,7 @@ final class ProductDataTab {
 	}
 
 	/**
-	 * Sets the accepted fields of the edit form's submission on the product WooCommerce is about to save, for a product the tab supports.
+	 * Sets the accepted fields of the edit form's submission on the product WooCommerce is about to save, for a product the tab applies to.
 	 *
 	 * A field the form did not post, because it was not rendered or is disabled, keeps its stored value, and a rejected field keeps its stored value and adds one of WooCommerce's meta box errors that names it.
 	 *
@@ -135,13 +136,14 @@ final class ProductDataTab {
 	 * @param   \WC_Product $product The product being saved.
 	 */
 	public function save_fields( \WC_Product $product ): void {
-		if ( ! $this->supports( $product ) ) {
+		$tab = $this->get_tab( $product );
+		if ( \is_null( $tab ) ) {
 			return;
 		}
 
 		$fields = array();
-		foreach ( $this->get_groups( $product ) as $group ) {
-			foreach ( self::get_fields( $group, $product ) as $field ) {
+		foreach ( $this->get_groups( $tab, $product ) as $group ) {
+			foreach ( $group['fields'] as $field ) {
 				if ( isset( $field['id'] ) ) {
 					$fields[ $field['id'] ] = $field;
 				}
@@ -171,31 +173,22 @@ final class ProductDataTab {
 	// region HELPERS
 
 	/**
-	 * Returns the tab's definition, evaluating it on first use.
+	 * Returns the tab for the product, or null when the tab does not apply to it, resolving it once per product.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @return  Tab
+	 * @param   \WC_Product $product The product being edited or saved.
+	 *
+	 * @return  Tab|null
 	 */
-	protected function get_tab(): array {
-		return $this->tab ??= ( $this->definition )();
-	}
+	protected function get_tab( \WC_Product $product ): ?array {
+		$product_id = $product->get_id();
+		if ( ! \array_key_exists( $product_id, $this->tabs ) ) {
+			$this->tabs[ $product_id ] = $this->definition->get_product_data_tab( $this->id, $product );
+		}
 
-	/**
-	 * Returns whether the tab supports the product, which holds for every product when the tab sets no supports callable.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   \WC_Product $product The product.
-	 *
-	 * @return  bool
-	 */
-	protected function supports( \WC_Product $product ): bool {
-		$supports = $this->get_tab()['supports'] ?? null;
-
-		return \is_null( $supports ) || $supports( $product );
+		return $this->tabs[ $product_id ];
 	}
 
 	/**
@@ -204,11 +197,12 @@ final class ProductDataTab {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
+	 * @param   Tab         $tab     The tab for the product.
 	 * @param   \WC_Product $product The product being edited or saved.
 	 *
 	 * @return  list<Group>
 	 */
-	protected function get_groups( \WC_Product $product ): array {
+	protected function get_groups( array $tab, \WC_Product $product ): array {
 		/**
 		 * Filters the groups of the product data tab, so that other plugins can add groups or fields.
 		 *
@@ -218,22 +212,7 @@ final class ProductDataTab {
 		 * @param   list<Group> $groups  The tab's groups.
 		 * @param   \WC_Product $product The product being edited or saved.
 		 */
-		return \apply_filters( "{$this->id}_groups", $this->get_tab()['groups'], $product );
-	}
-
-	/**
-	 * Returns the group's fields for the product.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   Group       $group   The group.
-	 * @param   \WC_Product $product The product being edited or saved.
-	 *
-	 * @return  list<ProductField>
-	 */
-	protected static function get_fields( array $group, \WC_Product $product ): array {
-		return $group['fields'] instanceof \Closure ? ( $group['fields'] )( $product ) : $group['fields'];
+		return \apply_filters( "{$this->id}_groups", $tab['groups'], $product );
 	}
 
 	/**
