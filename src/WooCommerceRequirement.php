@@ -2,6 +2,8 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce;
 
+use DeepWebSolutions\Framework\Bootstrap\Requirements;
+
 \defined( 'ABSPATH' ) || exit;
 
 /**
@@ -63,14 +65,10 @@ final class WooCommerceRequirement {
 	 * @version 2.0.0
 	 */
 	public function render_notice(): void {
-		if ( ! \current_user_can( 'activate_plugins' ) ) {
-			return;
-		}
-
 		if ( ! \defined( 'WC_VERSION' ) ) {
 			$requirements = \validate_plugin_requirements( \plugin_basename( $this->plugin_file ) );
 			if ( \is_wp_error( $requirements ) ) {
-				\wp_admin_notice(
+				Requirements::print_admin_notice(
 					$requirements->get_error_message(),
 					array(
 						'type'           => 'error',
@@ -81,14 +79,13 @@ final class WooCommerceRequirement {
 			return;
 		}
 
-		\wp_admin_notice(
+		Requirements::print_admin_notice(
 			\sprintf(
 				/* translators: 1: The plugin's name. 2: The lowest WooCommerce version the plugin runs on. */
 				\esc_html__( '%1$s needs WooCommerce %2$s or later, so its features stay off until WooCommerce is updated.', 'wp-framework' ),
 				\esc_html( \get_plugin_data( $this->plugin_file, false )['Name'] ),
 				\esc_html( $this->get_floor() )
-			),
-			array( 'type' => 'error' )
+			)
 		);
 	}
 
