@@ -1,6 +1,6 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce\Settings;
+namespace DeepWebSolutions\Framework\WooCommerce\Setting;
 
 use Automattic\WooCommerce\Admin\Settings\SettingsSection as WooCommerceSettingsSection;
 use DeepWebSolutions\Framework\Settings\Forms;

@@ -1,6 +1,6 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce;
+namespace DeepWebSolutions\Framework\WooCommerce\Logging;
 
 use Automattic\WooCommerce\Utilities\LoggingUtil;
 use Psr\Log\AbstractLogger as PsrAbstractLogger;

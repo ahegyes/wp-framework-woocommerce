@@ -1,11 +1,12 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce\Orders;
+namespace DeepWebSolutions\Framework\WooCommerce\EditScreen\Hosts;
 
-use DeepWebSolutions\Framework\Settings\ObjectForm;
-use DeepWebSolutions\Framework\Settings\ObjectFormHostInterface;
-use DeepWebSolutions\Framework\Settings\ObjectStoreInterface;
+use DeepWebSolutions\Framework\Settings\EditScreen\ObjectForm;
+use DeepWebSolutions\Framework\Settings\EditScreen\ObjectFormHostInterface;
+use DeepWebSolutions\Framework\Settings\EditScreen\ObjectStoreInterface;
 use DeepWebSolutions\Framework\Shared\Exception\LogicException;
+use DeepWebSolutions\Framework\WooCommerce\EditScreen\Stores\OrderMetaStore;
 
 \defined( 'ABSPATH' ) || exit;
 

@@ -12,4 +12,4 @@ namespace DeepWebSolutions\Framework\WooCommerce\Bootstrap;
 
 \defined( 'ABSPATH' ) || exit;
 
-require_once __DIR__ . '/uninstall/WooCommerceUninstaller.php';
+require_once __DIR__ . '/bootstrap/WooCommerceUninstaller.php';

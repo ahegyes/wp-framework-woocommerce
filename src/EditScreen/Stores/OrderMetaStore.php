@@ -1,8 +1,8 @@
 <?php declare( strict_types=1 );
 
-namespace DeepWebSolutions\Framework\WooCommerce\Orders;
+namespace DeepWebSolutions\Framework\WooCommerce\EditScreen\Stores;
 
-use DeepWebSolutions\Framework\Settings\ObjectStoreInterface;
+use DeepWebSolutions\Framework\Settings\EditScreen\ObjectStoreInterface;
 
 \defined( 'ABSPATH' ) || exit;
 
