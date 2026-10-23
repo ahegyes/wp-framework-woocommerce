@@ -2,6 +2,7 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\EditScreen\Hosts;
 
+use Automattic\WooCommerce\Utilities\OrderUtil;
 use DeepWebSolutions\Framework\Settings\EditScreen\Hosts\PostMetaBox;
 use DeepWebSolutions\Framework\Settings\EditScreen\ObjectForm;
 use DeepWebSolutions\Framework\Settings\EditScreen\ObjectFormHostInterface;
@@ -120,7 +121,7 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 */
 	public function add_meta_box( string $screen_id, mixed $order ): void {
 		// WooCommerce's order screen ids depend on the storage, the order type and whether the user sees its menu.
-		$order_id = self::get_order_id( $order );
+		$order_id = OrderUtil::get_post_or_order_id( $order );
 		if ( 0 === $order_id || ! \in_array( $screen_id, \array_map( 'wc_get_page_screen_id', $this->order_types ), true ) || ! $this->form->can_render( $order_id ) ) {
 			return;
 		}
@@ -138,7 +139,7 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 * @param   mixed $order The edited order, a WC_Order in WooCommerce's order tables and a WP_Post in the posts table.
 	 */
 	public function render_meta_box( mixed $order ): void {
-		$this->form->render( self::get_order_id( $order ) );
+		$this->form->render( OrderUtil::get_post_or_order_id( $order ) );
 	}
 
 	/**
@@ -153,28 +154,6 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 */
 	public function save_meta_box( int $order_id ): void {
 		$this->form->save( $order_id );
-	}
-
-	// endregion
-
-	// region HELPERS
-
-	/**
-	 * Returns the id of the order WooCommerce passes to meta box hooks, or 0 for any other object.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   mixed $order The object.
-	 *
-	 * @return  int
-	 */
-	protected static function get_order_id( mixed $order ): int {
-		return match ( true ) {
-			$order instanceof \WC_Abstract_Order => $order->get_id(),
-			$order instanceof \WP_Post           => $order->ID,
-			default                              => 0,
-		};
 	}
 
 	// endregion

@@ -52,7 +52,8 @@ final class OrderMetaStore implements ObjectStoreInterface {
 		}
 
 		foreach ( $values as $key => $value ) {
-			$order->update_meta_data( $key, $value ); // @phpstan-ignore argument.type (WooCommerce stores any value its data store can serialize, though its docblock lists only strings and arrays.)
+			// PHP turns an integer-like key into an int, which never matches the string keys WooCommerce reads back, so each write would add a row.
+			$order->update_meta_data( (string) $key, $value ); // @phpstan-ignore argument.type (WooCommerce stores any value its data store can serialize, though its docblock lists only strings and arrays.)
 		}
 		$order->save();
 	}

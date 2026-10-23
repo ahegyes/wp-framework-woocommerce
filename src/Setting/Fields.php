@@ -7,7 +7,7 @@ use DeepWebSolutions\Framework\Settings\Forms;
 \defined( 'ABSPATH' ) || exit;
 
 /**
- * Claims, sanitizes, renders and reports the fields of the WooCommerce settings helpers' sections.
+ * Claims, sanitizes, renders and reports the fields of one WooCommerce settings helper's sections.
  *
  * @since   2.0.0
  * @version 2.0.0
@@ -17,6 +17,20 @@ use DeepWebSolutions\Framework\Settings\Forms;
  * @phpstan-import-type Field from Forms
  */
 final class Fields {
+	// region FIELDS AND CONSTANTS
+
+	/**
+	 * The fields the helper owns, by id.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @var     array<string, Field>
+	 */
+	protected array $owned = array();
+
+	// endregion
+
 	// region MAGIC METHODS
 
 	/**
@@ -24,92 +38,119 @@ final class Fields {
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
+	 *
+	 * @param   array<string, mixed> $sections The helper's sections, keyed by id.
 	 */
-	protected function __construct() {}
+	public function __construct(
+		protected array $sections
+	) {}
 
 	// endregion
 
 	// region METHODS
 
 	/**
-	 * Adds a section's fields to its owner's fields by id, and hooks the owner's row callback to each type among them that WooCommerce does not draw and Forms does.
+	 * Registers the hooks that claim the fields of the helper's sections on the tab and sanitize them.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   array<mixed>         $settings   The section's settings after every filter.
-	 * @param   array<string, Field> $owned      The owner's fields by id, to which the section's fields are added.
-	 * @param   callable             $render_row The owner's row callback.
+	 * @param   string $tab_id The id of the tab that holds the sections.
 	 */
-	public static function claim( array $settings, array &$owned, callable $render_row ): void {
+	public function register_hooks( string $tab_id ): void {
+		\add_filter( "woocommerce_get_settings_$tab_id", array( $this, 'claim' ), \PHP_INT_MAX, 2 );
+		\add_filter( 'woocommerce_admin_settings_sanitize_option', array( $this, 'sanitize_option' ), 10, 3 );
+	}
+
+	// endregion
+
+	// region HOOKS
+
+	/**
+	 * Takes ownership of the fields of one of the helper's sections, as WooCommerce's settings filter leaves them, and hooks the row printer to each type among them that WooCommerce does not draw and Forms does.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   array<mixed> $settings   The section's settings.
+	 * @param   string       $section_id The section's id.
+	 *
+	 * @return  array<mixed>
+	 */
+	public function claim( array $settings, string $section_id ): array {
+		if ( ! isset( $this->sections[ $section_id ] ) ) {
+			return $settings;
+		}
+
 		foreach ( $settings as $setting ) {
 			if ( ! self::is_field( $setting ) ) {
 				continue;
 			}
 
 			// is_field() has checked the id, which the Field shape leaves optional.
-			$owned[ $setting['id'] ?? '' ] = $setting;
+			$this->owned[ $setting['id'] ?? '' ] = $setting;
 			if ( self::is_drawn_by_forms( $setting ) ) {
-				\add_action( "woocommerce_admin_field_{$setting['type']}", $render_row );
+				\add_action( "woocommerce_admin_field_{$setting['type']}", array( $this, 'render_row' ) );
 			}
 		}
+
+		return $settings;
 	}
 
 	/**
-	 * Returns the value to store for an owned field's submission, or null, under which WooCommerce keeps the stored value.
+	 * Returns the value to store for an owned field's submission, or null, under which WooCommerce keeps the stored value, and any other option's value unchanged.
 	 *
-	 * A disabled field and a field the form did not post are never saved. A field with validate, a render callable or the checkboxes type goes through Forms::sanitize_value(), and a rejection becomes one of WooCommerce's settings errors. Every other field keeps WooCommerce's value.
+	 * A disabled field and a field the form did not post are never saved. The submission goes through Forms::sanitize_fields(), where a field without validate, a render callable or the checkboxes type keeps WooCommerce's value, and a rejection becomes one of WooCommerce's settings errors.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   Field $field The owned field.
-	 * @param   mixed $value WooCommerce's value for the field.
-	 * @param   mixed $raw   The unslashed submission, which over REST is WooCommerce's normalized value and is null when the form posted nothing for the field.
+	 * @param   mixed $value  WooCommerce's value for the option.
+	 * @param   mixed $option The option's setting.
+	 * @param   mixed $raw    The unslashed submission, which over REST is WooCommerce's normalized value and is null when the form posted nothing for the field.
 	 *
 	 * @return  mixed
 	 */
-	public static function sanitize_option( array $field, mixed $value, mixed $raw ): mixed {
-		if ( Forms::is_disabled( $field ) ) {
-			return null;
-		}
-
-		// WooCommerce prints no hidden input before its own checkboxes and multi-value selects, so a cleared one posts nothing, while any other field that posts nothing was not rendered.
-		if ( \is_null( $raw ) ) {
-			$raw = match ( $field['type'] ) {
-				'checkbox'                              => 'no',
-				'multiselect', 'multi_select_countries' => array(),
-				default                                 => null,
-			};
-			if ( \is_null( $raw ) ) {
-				return null;
-			}
-		}
-
-		if ( ! isset( $field['validate'] ) && ! self::is_drawn_by_forms( $field ) ) {
+	public function sanitize_option( mixed $value, mixed $option, mixed $raw ): mixed {
+		$field = $this->get_owned( $option );
+		if ( \is_null( $field ) ) {
 			return $value;
 		}
 
-		$sanitized = Forms::sanitize_value( $field, $raw );
-		if ( \is_wp_error( $sanitized ) ) {
-			// The message is plain text, because WooCommerce escapes its settings errors when it prints them.
-			\WC_Admin_Settings::add_error( Forms::get_rejection_message( Forms::get_title( $field ), $sanitized ) );
-			return null;
+		// WooCommerce prints no hidden input before its own checkboxes and multi-value selects, so a cleared one posts nothing, while any other field that posts nothing was not rendered.
+		$raw ??= match ( $field['type'] ) {
+			'checkbox'                              => 'no',
+			'multiselect', 'multi_select_countries' => array(),
+			default                                 => null,
+		};
+		if ( ! isset( $field['validate'] ) && ! self::is_drawn_by_forms( $field ) ) {
+			$field['validate'] = static fn (): mixed => $value;
 		}
 
-		return $sanitized;
+		$id     = $field['id'] ?? '';
+		$result = Forms::sanitize_fields( array( $field ), \is_null( $raw ) ? array() : array( $id => $raw ) );
+		if ( isset( $result['errors'][ $id ] ) ) {
+			// The message is plain text, because WooCommerce escapes its settings errors when it prints them.
+			\WC_Admin_Settings::add_error( Forms::get_rejection_message( Forms::get_title( $field ), $result['errors'][ $id ] ) );
+		}
+
+		return $result['values'][ $id ] ?? null;
 	}
 
 	/**
-	 * Prints the field in WooCommerce's settings row, with its control from Forms::render_control().
+	 * Prints an owned field in WooCommerce's settings row, with its control from Forms::render_control().
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   Field        $field    The owned field.
 	 * @param   array<mixed> $resolved The field as WooCommerce prepared it for its row, with its stored value, field name and row class.
 	 */
-	public static function render_row( array $field, array $resolved ): void {
+	public function render_row( array $resolved ): void {
+		$field = $this->get_owned( $resolved );
+		if ( \is_null( $field ) ) {
+			return;
+		}
+
 		$id             = $field['id'] ?? '';
 		$field['title'] = Forms::get_title( $field );
 		$name           = \is_string( $resolved['field_name'] ?? null ) && '' !== $resolved['field_name'] ? $resolved['field_name'] : $id;
@@ -126,6 +167,20 @@ final class Fields {
 	// endregion
 
 	// region HELPERS
+
+	/**
+	 * Returns the owned field a WooCommerce setting names by its id, or null.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   mixed $setting The setting.
+	 *
+	 * @return  Field|null
+	 */
+	protected function get_owned( mixed $setting ): ?array {
+		return \is_array( $setting ) && \is_string( $setting['id'] ?? null ) ? ( $this->owned[ $setting['id'] ] ?? null ) : null;
+	}
 
 	/**
 	 * Returns whether a setting is a field a helper can own, which takes a string id and a string type.
