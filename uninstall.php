@@ -1,6 +1,6 @@
 <?php declare( strict_types=1 );
 /**
- * Loads the class whose handlers remove a plugin's WooCommerce order data on uninstall.
+ * Loads the class whose meta types let the uninstall engine remove a plugin's WooCommerce order data.
  *
  * @since   2.0.0
  * @version 2.0.0
