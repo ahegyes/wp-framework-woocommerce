@@ -1,6 +1,6 @@
 # wp-framework-woocommerce
 
-WooCommerce helpers: settings tabs and sections, product data tabs, a requirement check, a PSR-3 logger and order meta cleanup.
+The framework's settings, edit-screen and logging helpers carried onto WooCommerce's own screens and APIs, for plugins that extend WooCommerce.
 
 It builds on wp-framework-settings.
 
