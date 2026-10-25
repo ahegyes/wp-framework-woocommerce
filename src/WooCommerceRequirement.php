@@ -68,13 +68,7 @@ final class WooCommerceRequirement {
 		if ( ! \defined( 'WC_VERSION' ) ) {
 			$requirements = \validate_plugin_requirements( \plugin_basename( $this->plugin_file ) );
 			if ( \is_wp_error( $requirements ) ) {
-				Requirements::print_admin_notice(
-					$requirements->get_error_message(),
-					array(
-						'type'           => 'error',
-						'paragraph_wrap' => false, // Core's message is already paragraphs.
-					)
-				);
+				Requirements::print_admin_notice( $requirements );
 			}
 			return;
 		}
