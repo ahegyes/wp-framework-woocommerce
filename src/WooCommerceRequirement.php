@@ -42,61 +42,36 @@ final class WooCommerceRequirement {
 	 * @return  bool
 	 */
 	public function check(): bool {
-		$floor = $this->get_floor();
+		$floor = \get_file_data( $this->plugin_file, array( 'floor' => 'WC requires at least' ) )['floor'];
 		if ( \defined( 'WC_VERSION' ) && ( '' === $floor || \version_compare( WC_VERSION, $floor, '>=' ) ) ) {
 			return true;
 		}
 
-		\add_action( 'all_admin_notices', array( $this, 'render_notice' ) );
+		$plugin_file = $this->plugin_file;
+		\add_action(
+			'all_admin_notices',
+			static function () use ( $plugin_file, $floor ): void {
+				if ( ! \defined( 'WC_VERSION' ) ) {
+					// WordPress core names a missing WooCommerce only for a plugin whose Requires Plugins header lists it.
+					$requirements = \validate_plugin_requirements( \plugin_basename( $plugin_file ) );
+					if ( \is_wp_error( $requirements ) ) {
+						Requirements::print_admin_notice( $requirements );
+					}
+					return;
+				}
+
+				Requirements::print_admin_notice(
+					\sprintf(
+						/* translators: 1: The plugin's name. 2: The lowest WooCommerce version the plugin runs on. */
+						\esc_html__( '%1$s needs WooCommerce %2$s or later, so its features stay off until WooCommerce is updated.', 'wp-framework' ),
+						\esc_html( \get_plugin_data( $plugin_file, false )['Name'] ),
+						\esc_html( $floor )
+					)
+				);
+			}
+		);
 
 		return false;
-	}
-
-	// endregion
-
-	// region HOOKS
-
-	/**
-	 * Tells users who can activate plugins that WooCommerce is missing, in WordPress core's words, or older than the plugin needs.
-	 *
-	 * WordPress core names a missing WooCommerce only for a plugin whose Requires Plugins header lists it.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 */
-	public function render_notice(): void {
-		if ( ! \defined( 'WC_VERSION' ) ) {
-			$requirements = \validate_plugin_requirements( \plugin_basename( $this->plugin_file ) );
-			if ( \is_wp_error( $requirements ) ) {
-				Requirements::print_admin_notice( $requirements );
-			}
-			return;
-		}
-
-		Requirements::print_admin_notice(
-			\sprintf(
-				/* translators: 1: The plugin's name. 2: The lowest WooCommerce version the plugin runs on. */
-				\esc_html__( '%1$s needs WooCommerce %2$s or later, so its features stay off until WooCommerce is updated.', 'wp-framework' ),
-				\esc_html( \get_plugin_data( $this->plugin_file, false )['Name'] ),
-				\esc_html( $this->get_floor() )
-			)
-		);
-	}
-
-	// endregion
-
-	// region HELPERS
-
-	/**
-	 * Returns the plugin's WC requires at least header, or an empty string when it has none.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @return  string
-	 */
-	protected function get_floor(): string {
-		return \get_file_data( $this->plugin_file, array( 'floor' => 'WC requires at least' ) )['floor'];
 	}
 
 	// endregion
