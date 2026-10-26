@@ -81,63 +81,31 @@ final class WooCommerceLogger extends AbstractLogger {
 			return;
 		}
 
-		$message        = self::interpolate( (string) $message, $context );
-		$this->logger ??= \function_exists( 'wc_get_logger' ) ? wc_get_logger() : null;
-		$this->logger?->log( $level, $message, array( 'source' => $this->source ) + self::encode_context( $context ) );
-
-		if ( $severity >= self::SEVERITIES[ PsrLogLevel::ERROR ] && self::is_dropped_by_woocommerce( $severity ) ) {
-			\error_log( self::format_record( $this->source, $level, $message, $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Errors must stay visible when WooCommerce drops them.
-		}
-	}
-
-	// endregion
-
-	// region HELPERS
-
-	/**
-	 * Returns the context with a Throwable under the exception key written as a string, and each value that does not encode as JSON replaced by its type.
-	 *
-	 * WooCommerce's file handler encodes the context as JSON, which turns a Throwable into an empty object and lets a throwing jsonSerialize() escape the logger.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   array<mixed> $context The record's context.
-	 *
-	 * @return  array<mixed>
-	 */
-	protected static function encode_context( array $context ): array {
+		// WooCommerce's file handler encodes the context as JSON, which turns a Throwable into an empty object and lets a throwing jsonSerialize() escape the logger.
+		$encoded = $context;
 		foreach ( $context as $key => $value ) {
 			if ( 'exception' === $key && $value instanceof \Throwable ) {
-				$context[ $key ] = (string) $value;
+				$encoded[ $key ] = (string) $value;
 				continue;
 			}
 
 			try {
-				$encoded = wp_json_encode( $value );
+				$json = wp_json_encode( $value );
 			} catch ( \Throwable ) {
-				$encoded = false;
+				$json = false;
 			}
-			if ( false === $encoded ) {
-				$context[ $key ] = \get_debug_type( $value );
+			if ( false === $json ) {
+				$encoded[ $key ] = \get_debug_type( $value );
 			}
 		}
 
-		return $context;
-	}
+		$message        = self::interpolate( (string) $message, $context );
+		$this->logger ??= \function_exists( 'wc_get_logger' ) ? wc_get_logger() : null;
+		$this->logger?->log( $level, $message, array( 'source' => $this->source ) + $encoded );
 
-	/**
-	 * Returns whether WooCommerce drops a record of the severity, because it is not loaded, its logging is off or its threshold is above the severity.
-	 *
-	 * @since   2.0.0
-	 * @version 2.0.0
-	 *
-	 * @param   int $severity The record's severity.
-	 *
-	 * @return  bool
-	 */
-	protected static function is_dropped_by_woocommerce( int $severity ): bool {
-		return ! \class_exists( LoggingUtil::class ) || ! LoggingUtil::logging_is_enabled() || \WC_Log_Levels::get_level_severity( LoggingUtil::get_level_threshold() ) > $severity;
+		if ( $severity >= self::SEVERITIES[ PsrLogLevel::ERROR ] && ( ! \class_exists( LoggingUtil::class ) || ! LoggingUtil::logging_is_enabled() || \WC_Log_Levels::get_level_severity( LoggingUtil::get_level_threshold() ) > $severity ) ) {
+			\error_log( self::format_record( $this->source, $level, $message, $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Errors must stay visible when WooCommerce drops them.
+		}
 	}
 
 	// endregion
