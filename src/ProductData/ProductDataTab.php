@@ -65,9 +65,9 @@ final class ProductDataTab {
 	 * @version 2.0.0
 	 */
 	public function register_hooks(): void {
-		\add_filter( 'woocommerce_product_data_tabs', array( $this, 'add_tab' ) );
-		\add_action( 'woocommerce_product_data_panels', array( $this, 'render_panel' ) );
-		\add_action( 'woocommerce_admin_process_product_object', array( $this, 'save_fields' ) );
+		add_filter( 'woocommerce_product_data_tabs', array( $this, 'add_tab' ) );
+		add_action( 'woocommerce_product_data_panels', array( $this, 'render_panel' ) );
+		add_action( 'woocommerce_admin_process_product_object', array( $this, 'save_fields' ) );
 	}
 
 	// endregion
@@ -114,9 +114,9 @@ final class ProductDataTab {
 			return;
 		}
 
-		echo '<div id="' . \esc_attr( "{$this->id}_product_data" ) . '" class="panel woocommerce_options_panel hidden">';
+		echo '<div id="' . esc_attr( "{$this->id}_product_data" ) . '" class="panel woocommerce_options_panel hidden">';
 		foreach ( $this->get_groups( $tab, $product ) as $group ) {
-			echo '<div class="' . \esc_attr( \implode( ' ', \array_merge( array( 'options_group' ), $group['class'] ?? array() ) ) ) . '">';
+			echo '<div class="' . esc_attr( \implode( ' ', \array_merge( array( 'options_group' ), $group['class'] ?? array() ) ) ) . '">';
 			foreach ( $group['fields'] as $field ) {
 				self::render_field( $field, $product );
 			}
@@ -150,7 +150,7 @@ final class ProductDataTab {
 			}
 		}
 
-		$posted    = \wp_unslash( $_POST ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce verifies its meta box nonce and the edit_post capability before it fires this action, and Forms::sanitize_fields() sanitizes each field.
+		$posted    = wp_unslash( $_POST ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce verifies its meta box nonce and the edit_post capability before it fires this action, and Forms::sanitize_fields() sanitizes each field.
 		$submitted = array();
 		foreach ( $fields as $id => $field ) {
 			if ( \array_key_exists( self::get_key( $field ), $posted ) ) {
@@ -164,7 +164,7 @@ final class ProductDataTab {
 		}
 		foreach ( $result['errors'] as $id => $error ) {
 			// WooCommerce prints its meta box errors through wp_kses_post(), which would keep markup from a label or a rejection's message.
-			\WC_Admin_Meta_Boxes::add_error( \esc_html( Forms::get_rejection_message( self::get_title( $fields[ $id ] ), $error ) ) );
+			\WC_Admin_Meta_Boxes::add_error( esc_html( Forms::get_rejection_message( self::get_title( $fields[ $id ] ), $error ) ) );
 		}
 	}
 
@@ -212,7 +212,7 @@ final class ProductDataTab {
 		 * @param   list<Group> $groups  The tab's groups.
 		 * @param   \WC_Product $product The product being edited or saved.
 		 */
-		return \apply_filters( "{$this->id}_groups", $tab['groups'], $product );
+		return apply_filters( "{$this->id}_groups", $tab['groups'], $product );
 	}
 
 	/**
@@ -239,7 +239,7 @@ final class ProductDataTab {
 
 		if ( isset( $field['render'] ) ) {
 			$group = Forms::is_group( $field );
-			echo $group ? '<fieldset class="' . \esc_attr( $row_class ) . '"><legend>' . \wp_kses_post( $field['label'] ) . '</legend>' : '<p class="' . \esc_attr( $row_class ) . '"><label for="' . \esc_attr( $id ) . '">' . \wp_kses_post( $field['label'] ) . '</label>';
+			echo $group ? '<fieldset class="' . esc_attr( $row_class ) . '"><legend>' . wp_kses_post( $field['label'] ) . '</legend>' : '<p class="' . esc_attr( $row_class ) . '"><label for="' . esc_attr( $id ) . '">' . wp_kses_post( $field['label'] ) . '</label>';
 			echo Forms::render_control( $field, $field['value'], $key, $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The render callable escapes its control.
 			echo $group ? '</fieldset>' : '</p>';
 			return;
@@ -255,10 +255,10 @@ final class ProductDataTab {
 					$field['value'] = Forms::escape_attribute( $field['value'] );
 				}
 				$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + ( Forms::DEFAULT_CUSTOM_ATTRIBUTES[ $field['type'] ] ?? array() );
-				\woocommerce_wp_text_input( $field );
+				woocommerce_wp_text_input( $field );
 				break;
 			case 'textarea':
-				\woocommerce_wp_textarea_input( $field );
+				woocommerce_wp_textarea_input( $field );
 				break;
 			case 'checkbox':
 				// WooCommerce ignores a checkbox's top-level disabled, and prints its hidden unchecked input even for a disabled checkbox.
@@ -267,10 +267,10 @@ final class ProductDataTab {
 				} else {
 					echo Forms::render_hidden_input( $key, 'no' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_hidden_input() escapes the input.
 				}
-				\woocommerce_wp_checkbox( array( 'checked_value' => 'yes' ) + $field );
+				woocommerce_wp_checkbox( array( 'checked_value' => 'yes' ) + $field );
 				break;
 			case 'select':
-				\woocommerce_wp_select( $field );
+				woocommerce_wp_select( $field );
 				break;
 			case 'multiselect':
 				if ( ! Forms::is_disabled( $field ) ) {
@@ -278,10 +278,10 @@ final class ProductDataTab {
 				}
 				$field['name']              = "{$key}[]";
 				$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + array( 'multiple' => 'multiple' );
-				\woocommerce_wp_select( $field );
+				woocommerce_wp_select( $field );
 				break;
 			case 'radio':
-				\woocommerce_wp_radio( $field );
+				woocommerce_wp_radio( $field );
 				break;
 			case 'checkboxes':
 				// The row's legend names the group, so Forms draws the choices without one of its own and with the description as their help.
@@ -289,7 +289,7 @@ final class ProductDataTab {
 					'title' => '',
 					'desc'  => $field['description'] ?? '',
 				) + $field;
-				echo '<fieldset class="' . \esc_attr( $row_class ) . '"><legend>' . \wp_kses_post( $field['label'] ) . '</legend>';
+				echo '<fieldset class="' . esc_attr( $row_class ) . '"><legend>' . wp_kses_post( $field['label'] ) . '</legend>';
 				echo Forms::render_control( $group, $field['value'], $key, $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_control() escapes the control.
 				echo '</fieldset>';
 				break;

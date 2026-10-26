@@ -69,8 +69,8 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	#[\Override]
 	public function register_hooks( ObjectForm $form ): void {
 		$this->form = $form;
-		\add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ), 10, 2 );
-		\add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_meta_box' ), 35 );
+		add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ), 10, 2 );
+		add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_meta_box' ), 35 );
 	}
 
 	/**
@@ -127,7 +127,7 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 		}
 
 		// WordPress prints a box's title as markup, so the title goes in as the form defines it.
-		\add_meta_box( $this->form->get_id(), $this->form->get_title( $order_id ), array( $this, 'render_meta_box' ), $screen_id, $this->context, $this->priority );
+		add_meta_box( $this->form->get_id(), $this->form->get_title( $order_id ), array( $this, 'render_meta_box' ), $screen_id, $this->context, $this->priority );
 	}
 
 	/**

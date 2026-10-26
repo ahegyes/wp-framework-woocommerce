@@ -80,7 +80,7 @@ final class WooCommerceLogger extends AbstractLogger {
 		}
 
 		$message        = self::interpolate( (string) $message, $context );
-		$this->logger ??= \function_exists( 'wc_get_logger' ) ? \wc_get_logger() : null;
+		$this->logger ??= \function_exists( 'wc_get_logger' ) ? wc_get_logger() : null;
 		$this->logger?->log( $level, $message, array( 'source' => $this->source ) + self::encode_context( $context ) );
 
 		if ( $severity >= self::SEVERITIES[ PsrLogLevel::ERROR ] && self::is_dropped_by_woocommerce( $severity ) ) {
@@ -112,7 +112,7 @@ final class WooCommerceLogger extends AbstractLogger {
 			}
 
 			try {
-				$encoded = \wp_json_encode( $value );
+				$encoded = wp_json_encode( $value );
 			} catch ( \Throwable ) {
 				$encoded = false;
 			}

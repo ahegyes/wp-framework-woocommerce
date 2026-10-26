@@ -42,19 +42,19 @@ final class WooCommerceRequirement {
 	 * @return  bool
 	 */
 	public function check(): bool {
-		$floor = \get_file_data( $this->plugin_file, array( 'floor' => 'WC requires at least' ) )['floor'];
+		$floor = get_file_data( $this->plugin_file, array( 'floor' => 'WC requires at least' ) )['floor'];
 		if ( \defined( 'WC_VERSION' ) && ( '' === $floor || \version_compare( WC_VERSION, $floor, '>=' ) ) ) {
 			return true;
 		}
 
 		$plugin_file = $this->plugin_file;
-		\add_action(
+		add_action(
 			'all_admin_notices',
 			static function () use ( $plugin_file, $floor ): void {
 				if ( ! \defined( 'WC_VERSION' ) ) {
 					// WordPress core names a missing WooCommerce only for a plugin whose Requires Plugins header lists it.
-					$requirements = \validate_plugin_requirements( \plugin_basename( $plugin_file ) );
-					if ( \is_wp_error( $requirements ) ) {
+					$requirements = validate_plugin_requirements( plugin_basename( $plugin_file ) );
+					if ( is_wp_error( $requirements ) ) {
 						Requirements::print_admin_notice( $requirements );
 					}
 					return;
@@ -63,9 +63,9 @@ final class WooCommerceRequirement {
 				Requirements::print_admin_notice(
 					\sprintf(
 						/* translators: 1: The plugin's name. 2: The lowest WooCommerce version the plugin runs on. */
-						\esc_html__( '%1$s needs WooCommerce %2$s or later, so its features stay off until WooCommerce is updated.', 'wp-framework' ),
-						\esc_html( \get_plugin_data( $plugin_file, false )['Name'] ),
-						\esc_html( $floor )
+						esc_html__( '%1$s needs WooCommerce %2$s or later, so its features stay off until WooCommerce is updated.', 'wp-framework' ),
+						esc_html( get_plugin_data( $plugin_file, false )['Name'] ),
+						esc_html( $floor )
 					)
 				);
 			}

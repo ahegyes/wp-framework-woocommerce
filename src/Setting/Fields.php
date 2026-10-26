@@ -58,8 +58,8 @@ final class Fields {
 	 * @param   string $tab_id The id of the tab that holds the sections.
 	 */
 	public function register_hooks( string $tab_id ): void {
-		\add_filter( "woocommerce_get_settings_$tab_id", array( $this, 'claim' ), \PHP_INT_MAX, 2 );
-		\add_filter( 'woocommerce_admin_settings_sanitize_option', array( $this, 'sanitize_option' ), 10, 3 );
+		add_filter( "woocommerce_get_settings_$tab_id", array( $this, 'claim' ), \PHP_INT_MAX, 2 );
+		add_filter( 'woocommerce_admin_settings_sanitize_option', array( $this, 'sanitize_option' ), 10, 3 );
 	}
 
 	// endregion
@@ -90,7 +90,7 @@ final class Fields {
 			// is_field() has checked the id, which the Field shape leaves optional.
 			$this->owned[ $setting['id'] ?? '' ] = $setting;
 			if ( self::is_drawn_by_forms( $setting ) ) {
-				\add_action( "woocommerce_admin_field_{$setting['type']}", array( $this, 'render_row' ) );
+				add_action( "woocommerce_admin_field_{$setting['type']}", array( $this, 'render_row' ) );
 			}
 		}
 
@@ -156,10 +156,10 @@ final class Fields {
 		$name           = \is_string( $resolved['field_name'] ?? null ) && '' !== $resolved['field_name'] ? $resolved['field_name'] : $id;
 		$row_class      = \is_string( $resolved['row_class'] ?? null ) ? $resolved['row_class'] : '';
 
-		echo '<tr class="' . \esc_attr( $row_class ) . '"><th scope="row" class="titledesc">';
+		echo '<tr class="' . esc_attr( $row_class ) . '"><th scope="row" class="titledesc">';
 		// A group's legend names it, so its row heading is plain text.
-		echo Forms::is_group( $field ) ? \esc_html( $field['title'] ) : '<label for="' . \esc_attr( $id ) . '">' . \esc_html( $field['title'] ) . '</label>';
-		echo '</th><td class="forminp forminp-' . \esc_attr( \sanitize_title( $field['type'] ) ) . '">';
+		echo Forms::is_group( $field ) ? esc_html( $field['title'] ) : '<label for="' . esc_attr( $id ) . '">' . esc_html( $field['title'] ) . '</label>';
+		echo '</th><td class="forminp forminp-' . esc_attr( sanitize_title( $field['type'] ) ) . '">';
 		echo Forms::render_control( $field, $resolved['value'] ?? '', $name, $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_control() escapes the control.
 		echo '</td></tr>';
 	}

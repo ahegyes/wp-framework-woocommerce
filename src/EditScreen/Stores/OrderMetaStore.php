@@ -25,7 +25,7 @@ final class OrderMetaStore implements ObjectStoreInterface {
 	 */
 	#[\Override]
 	public function get_values( int $object_id, array $keys ): array {
-		$order  = \wc_get_order( $object_id );
+		$order  = wc_get_order( $object_id );
 		$values = array();
 		if ( $order instanceof \WC_Abstract_Order ) {
 			foreach ( $keys as $key ) {
@@ -46,7 +46,7 @@ final class OrderMetaStore implements ObjectStoreInterface {
 	 */
 	#[\Override]
 	public function update_values( int $object_id, array $values ): void {
-		$order = \wc_get_order( $object_id );
+		$order = wc_get_order( $object_id );
 		if ( ! $order instanceof \WC_Abstract_Order ) {
 			return;
 		}
