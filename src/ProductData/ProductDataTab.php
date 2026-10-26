@@ -10,7 +10,7 @@ use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
 /**
  * Adds a tab to WooCommerce's product data box whose panel edits product meta through field arrays.
  *
- * Fields take the arguments of WooCommerce's woocommerce_wp_* functions, which draw the built-in types, plus a type, a default, validate and render, and each stores under its name, or its id, without brackets. A field with a render callable and a checkboxes group print in WooCommerce's row around Forms::render_control(), and that row is a paragraph, so render returns its control as inline content, escapes, names and describes it, and prints a hidden empty input before it unless the field is disabled.
+ * Fields take the arguments of WooCommerce's woocommerce_wp_* functions, which draw the built-in types, plus a type, a default, validate and render, and each stores under its name, or its id, without brackets. A field with a render callable and a checkboxes group print in WooCommerce's row around Forms::render_control(), and that row is a paragraph, or for a group type a fieldset its label names, so render returns its control as inline content, escapes, names and describes it, and prints a hidden empty input before it unless the field is disabled.
  *
  * @since   2.0.0
  * @version 2.0.0
@@ -238,9 +238,10 @@ final class ProductDataTab {
 		$row_class      = \trim( "form-field {$id}_field " . ( $field['wrapper_class'] ?? '' ) );
 
 		if ( isset( $field['render'] ) ) {
-			echo '<p class="' . \esc_attr( $row_class ) . '"><label for="' . \esc_attr( $id ) . '">' . \wp_kses_post( $field['label'] ) . '</label>';
+			$group = Forms::is_group( $field );
+			echo $group ? '<fieldset class="' . \esc_attr( $row_class ) . '"><legend>' . \wp_kses_post( $field['label'] ) . '</legend>' : '<p class="' . \esc_attr( $row_class ) . '"><label for="' . \esc_attr( $id ) . '">' . \wp_kses_post( $field['label'] ) . '</label>';
 			echo Forms::render_control( $field, $field['value'], $key, $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The render callable escapes its control.
-			echo '</p>';
+			echo $group ? '</fieldset>' : '</p>';
 			return;
 		}
 

@@ -157,8 +157,8 @@ final class Fields {
 		$row_class      = \is_string( $resolved['row_class'] ?? null ) ? $resolved['row_class'] : '';
 
 		echo '<tr class="' . \esc_attr( $row_class ) . '"><th scope="row" class="titledesc">';
-		// A checkboxes group's legend names it, so its row heading is plain text.
-		echo 'checkboxes' === $field['type'] ? \esc_html( $field['title'] ) : '<label for="' . \esc_attr( $id ) . '">' . \esc_html( $field['title'] ) . '</label>';
+		// A group's legend names it, so its row heading is plain text.
+		echo Forms::is_group( $field ) ? \esc_html( $field['title'] ) : '<label for="' . \esc_attr( $id ) . '">' . \esc_html( $field['title'] ) . '</label>';
 		echo '</th><td class="forminp forminp-' . \esc_attr( \sanitize_title( $field['type'] ) ) . '">';
 		echo Forms::render_control( $field, $resolved['value'] ?? '', $name, $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_control() escapes the control.
 		echo '</td></tr>';
