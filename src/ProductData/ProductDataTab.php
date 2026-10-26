@@ -63,6 +63,8 @@ final class ProductDataTab {
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
+	 *
+	 * @return  void
 	 */
 	public function register_hooks(): void {
 		add_filter( 'woocommerce_product_data_tabs', array( $this, 'add_tab' ) );
@@ -106,6 +108,8 @@ final class ProductDataTab {
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
+	 *
+	 * @return  void
 	 */
 	public function render_panel(): void {
 		$product = self::get_edited_product();
@@ -134,6 +138,8 @@ final class ProductDataTab {
 	 * @version 2.0.0
 	 *
 	 * @param   \WC_Product $product The product being saved.
+	 *
+	 * @return  void
 	 */
 	public function save_fields( \WC_Product $product ): void {
 		$tab = $this->get_tab( $product );
@@ -223,6 +229,8 @@ final class ProductDataTab {
 	 *
 	 * @param   ProductField $field   The field.
 	 * @param   \WC_Product  $product The product being edited.
+	 *
+	 * @return  void
 	 */
 	protected static function render_field( array $field, \WC_Product $product ): void {
 		if ( ! isset( $field['id'] ) ) {

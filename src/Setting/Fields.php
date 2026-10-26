@@ -56,6 +56,8 @@ final class Fields {
 	 * @version 2.0.0
 	 *
 	 * @param   string $tab_id The id of the tab that holds the sections.
+	 *
+	 * @return  void
 	 */
 	public function register_hooks( string $tab_id ): void {
 		add_filter( "woocommerce_get_settings_$tab_id", array( $this, 'claim' ), \PHP_INT_MAX, 2 );
@@ -144,6 +146,8 @@ final class Fields {
 	 * @version 2.0.0
 	 *
 	 * @param   array<mixed> $resolved The field as WooCommerce prepared it for its row, with its stored value, field name and row class.
+	 *
+	 * @return  void
 	 */
 	public function render_row( array $resolved ): void {
 		$field = $this->get_owned( $resolved );

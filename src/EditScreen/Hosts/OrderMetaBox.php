@@ -118,6 +118,8 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 *
 	 * @param   string $screen_id The screen's id, which is the post type when orders are stored as posts.
 	 * @param   mixed  $order     The edited object, which on an order screen is a WC_Order in WooCommerce's order tables and a WP_Post in the posts table.
+	 *
+	 * @return  void
 	 */
 	public function add_meta_box( string $screen_id, mixed $order ): void {
 		// WooCommerce's order screen ids depend on the storage, the order type and whether the user sees its menu.
@@ -137,6 +139,8 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 * @version 2.0.0
 	 *
 	 * @param   mixed $order The edited order, a WC_Order in WooCommerce's order tables and a WP_Post in the posts table.
+	 *
+	 * @return  void
 	 */
 	public function render_meta_box( mixed $order ): void {
 		$this->form->render( OrderUtil::get_post_or_order_id( $order ) );
@@ -151,6 +155,8 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 * @version 2.0.0
 	 *
 	 * @param   int $order_id The saved order's id.
+	 *
+	 * @return  void
 	 */
 	public function save_meta_box( int $order_id ): void {
 		$this->form->save( $order_id );
