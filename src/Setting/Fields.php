@@ -89,8 +89,7 @@ final class Fields {
 				continue;
 			}
 
-			// is_field() has checked the id, which the Field shape leaves optional.
-			$this->owned[ $setting['id'] ?? '' ] = $setting;
+			$this->owned[ $setting['id'] ?? '' ] = $setting; // is_field() has checked the id, which the Field shape leaves optional.
 			if ( self::is_drawn_by_forms( $setting ) ) {
 				add_action( "woocommerce_admin_field_{$setting['type']}", array( $this, 'render_row' ) );
 			}

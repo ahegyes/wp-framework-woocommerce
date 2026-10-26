@@ -119,7 +119,6 @@ final class SettingsSection extends WooCommerceSettingsSection {
 	#[\Override]
 	public function get_settings( \WC_Settings_Page $parent_page ): array {
 		$this->owner->register_hooks( $this->get_parent_page_id() );
-
 		return $this->fields ??= $this->definition->get_section_fields( $this->get_parent_page_id(), $this->id );
 	}
 

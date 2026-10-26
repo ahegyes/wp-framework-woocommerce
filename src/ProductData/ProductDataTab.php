@@ -258,8 +258,7 @@ final class ProductDataTab {
 			case 'number':
 			case 'email':
 			case 'url':
-				// WooCommerce prints the value through esc_attr(), which leaves an escaped value unchanged.
-				if ( \is_string( $field['value'] ) ) {
+				if ( \is_string( $field['value'] ) ) { // WooCommerce prints the value through esc_attr(), which leaves an escaped value unchanged.
 					$field['value'] = Forms::escape_attribute( $field['value'] );
 				}
 				$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + ( Forms::DEFAULT_CUSTOM_ATTRIBUTES[ $field['type'] ] ?? array() );
@@ -269,8 +268,7 @@ final class ProductDataTab {
 				woocommerce_wp_textarea_input( $field );
 				break;
 			case 'checkbox':
-				// WooCommerce ignores a checkbox's top-level disabled, and prints its hidden unchecked input even for a disabled checkbox.
-				if ( Forms::is_disabled( $field ) ) {
+				if ( Forms::is_disabled( $field ) ) { // WooCommerce ignores a checkbox's top-level disabled, and prints its hidden unchecked input even for a disabled checkbox.
 					$field['custom_attributes'] = ( $field['custom_attributes'] ?? array() ) + array( 'disabled' => 'disabled' );
 				} else {
 					echo Forms::render_hidden_input( $key, 'no' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_hidden_input() escapes the input.
@@ -342,7 +340,6 @@ final class ProductDataTab {
 	 */
 	protected static function get_edited_product(): ?\WC_Product {
 		$product = $GLOBALS['product_object'] ?? null;
-
 		return $product instanceof \WC_Product ? $product : null;
 	}
 

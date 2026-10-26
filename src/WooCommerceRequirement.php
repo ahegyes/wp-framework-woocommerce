@@ -52,8 +52,7 @@ final class WooCommerceRequirement {
 			'all_admin_notices',
 			static function () use ( $plugin_file, $floor ): void {
 				if ( ! \defined( 'WC_VERSION' ) ) {
-					// WordPress core names a missing WooCommerce only for a plugin whose Requires Plugins header lists it.
-					$requirements = validate_plugin_requirements( plugin_basename( $plugin_file ) );
+					$requirements = validate_plugin_requirements( plugin_basename( $plugin_file ) ); // WordPress core names a missing WooCommerce only for a plugin whose Requires Plugins header lists it.
 					if ( is_wp_error( $requirements ) ) {
 						Requirements::print_admin_notice( $requirements );
 					}
