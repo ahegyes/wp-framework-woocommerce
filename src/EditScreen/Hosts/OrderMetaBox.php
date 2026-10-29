@@ -149,7 +149,7 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	/**
 	 * Saves the form when WooCommerce saves an order from its edit screen, before WooCommerce saves the order's data, so that a status change and its emails see the form's values.
 	 *
-	 * WooCommerce fires the hook for every order type, and only the box's own screens print the form's nonce.
+	 * On the order tables WooCommerce fires the hook for every order type, and in the posts table only for the types wc_get_order_types( 'order-meta-boxes' ) lists; only the box's own screens print the form's nonce.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
