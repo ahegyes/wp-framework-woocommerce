@@ -10,7 +10,7 @@ use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
 /**
  * Adds a WooCommerce settings tab whose sections hold framework field arrays, saved through WooCommerce's settings API.
  *
- * WooCommerce loads its settings page class only for the woocommerce_get_settings_pages filter, so the tab is constructed in that filter's callback, which registers it. The tab owns every field of its sections after WooCommerce's settings filter, including fields other plugins add there.
+ * WooCommerce loads its settings page class only for the woocommerce_get_settings_pages filter, so the tab is constructed in that filter's callback, which registers it. The tab owns every field of its sections after WooCommerce's settings filter, including fields other plugins add there. A field's `render` callable takes effect only on a type WooCommerce does not draw, because WooCommerce draws its own types without firing the hook that prints it.
  *
  * @since   2.0.0
  * @version 2.0.0

@@ -11,7 +11,7 @@ use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
 /**
  * Adds a section of framework field arrays under an existing WooCommerce settings tab, saved through WooCommerce's settings API.
  *
- * The section is constructed in a woocommerce_settings_sections_registration callback and registered with the registry it receives, which refuses an id the tab already holds. It owns its fields after WooCommerce's settings filter, including fields other plugins add there, once WooCommerce first asks it for them.
+ * The section is constructed in a woocommerce_settings_sections_registration callback and registered with the registry it receives, which refuses an id the tab already holds. It owns its fields after WooCommerce's settings filter, including fields other plugins add there, once WooCommerce first asks it for them. A field's `render` callable takes effect only on a type WooCommerce does not draw, because WooCommerce draws its own types without firing the hook that prints it.
  *
  * @since   2.0.0
  * @version 2.0.0

@@ -202,7 +202,7 @@ final class Fields {
 	}
 
 	/**
-	 * Returns whether WooCommerce leaves the field's type undrawn and Forms draws it, which holds for a field with a render callable and for a checkboxes group.
+	 * Returns whether the field asks Forms to draw it, as a field with a render callable or a checkboxes group does, which WooCommerce honors only for a type it does not draw itself.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
