@@ -218,7 +218,7 @@ final class ProductDataTab {
 		 * @param   list<Group> $groups  The tab's groups.
 		 * @param   \WC_Product $product The product being edited or saved.
 		 */
-		return apply_filters( "{$this->id}_groups", $tab['groups'], $product );
+		return apply_filters( "{$this->id}/product_data_tab/groups", $tab['groups'], $product );
 	}
 
 	/**
