@@ -2,7 +2,9 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\EditScreen\Stores;
 
+use DeepWebSolutions\Framework\Core\Storage\StoredData;
 use DeepWebSolutions\Framework\Settings\EditScreen\ObjectStoreInterface;
+use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -43,9 +45,12 @@ final class OrderMetaStore implements ObjectStoreInterface {
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
+	 *
+	 * @throws  InvalidArgumentException Thrown when a value holds anything but scalars, null and arrays, before any value is stored.
 	 */
 	#[\Override]
 	public function update_values( int $object_id, array $values ): void {
+		StoredData::check_values( $values );
 		$order = wc_get_order( $object_id );
 		if ( ! $order instanceof \WC_Abstract_Order ) {
 			return;

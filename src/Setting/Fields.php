@@ -2,6 +2,7 @@
 
 namespace DeepWebSolutions\Framework\WooCommerce\Setting;
 
+use DeepWebSolutions\Framework\Core\Storage\StoredData;
 use DeepWebSolutions\Framework\Settings\Forms;
 
 \defined( 'ABSPATH' ) || exit;
@@ -101,7 +102,7 @@ final class Fields {
 	/**
 	 * Returns the value to store for an owned field's submission, or null, under which WooCommerce keeps the stored value, and any other option's value unchanged.
 	 *
-	 * A disabled field and a field the form did not post are never saved. The submission goes through Forms::sanitize_fields(), where a field without validate, a render callable or the checkboxes type keeps WooCommerce's value, and a rejection becomes one of WooCommerce's settings errors.
+	 * A disabled field and a field the form did not post are never saved. The submission goes through Forms::sanitize_fields(), where a field without validate, a render callable or the checkboxes type keeps WooCommerce's value when it holds only scalars, null and arrays, and a rejection becomes one of WooCommerce's settings errors.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -125,7 +126,7 @@ final class Fields {
 			default                                 => null,
 		};
 		if ( ! isset( $field['validate'] ) && ! self::is_drawn_by_forms( $field ) ) {
-			$field['validate'] = static fn (): mixed => $value;
+			$field['validate'] = static fn (): mixed => StoredData::is_storable_data( $value ) ? $value : null;
 		}
 
 		$id     = $field['id'] ?? '';
