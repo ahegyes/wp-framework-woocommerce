@@ -17,13 +17,13 @@
 		"branch-alias": {
 			"dev-trunk": "2.x-dev"
 		},
-		"scoping-stubs": [
-			"php-stubs/woocommerce-stubs"
-		],
-		"scoping-text-domain": "wp-framework",
 		"requires-wp": "7.1",
 		"requires-plugins": [
 			"woocommerce"
-		]
+		],
+		"scoping-stubs": [
+			"php-stubs/woocommerce-stubs"
+		],
+		"scoping-text-domain": "wp-framework"
 	}
 }
