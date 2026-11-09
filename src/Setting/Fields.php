@@ -41,10 +41,10 @@ final class Fields {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   array<string, mixed> $sections The helper's sections, keyed by id.
+	 * @param   list<string> $section_ids The ids of the helper's sections.
 	 */
 	public function __construct(
-		protected array $sections
+		protected array $section_ids
 	) {}
 
 	// endregion
@@ -100,7 +100,7 @@ final class Fields {
 	 * @return  array<mixed>
 	 */
 	public function claim( array $settings, string $section_id ): array {
-		if ( ! isset( $this->sections[ $section_id ] ) ) {
+		if ( ! \in_array( $section_id, $this->section_ids, true ) ) {
 			return $settings;
 		}
 

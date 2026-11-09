@@ -73,7 +73,8 @@ final class SettingsTab extends \WC_Settings_Page {
 		protected SectionFieldsDefinitionInterface $definition
 	) {
 		Forms::check_helper_id( $id );
-		foreach ( array( $id, ...\array_map( 'strval', \array_keys( $tab['sections'] ) ) ) as $checked ) {
+		$section_ids = \array_map( 'strval', \array_keys( $tab['sections'] ) );
+		foreach ( array( $id, ...$section_ids ) as $checked ) {
 			Fields::check_id( $checked );
 		}
 
@@ -82,7 +83,7 @@ final class SettingsTab extends \WC_Settings_Page {
 		$this->sections = $tab['sections'];
 		parent::__construct();
 
-		$this->owner = new Fields( $this->sections );
+		$this->owner = new Fields( $section_ids );
 		$this->owner->register_hooks( $id );
 	}
 

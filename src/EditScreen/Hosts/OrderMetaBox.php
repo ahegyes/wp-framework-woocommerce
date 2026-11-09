@@ -18,8 +18,6 @@ use DeepWebSolutions\Framework\WooCommerce\EditScreen\Stores\OrderMetaStore;
  *
  * @since   2.0.0
  * @version 2.0.0
- *
- * @phpstan-import-type Row from ObjectFormHostInterface
  */
 final class OrderMetaBox implements ObjectFormHostInterface {
 	// region FIELDS AND CONSTANTS

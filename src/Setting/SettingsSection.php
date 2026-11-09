@@ -65,7 +65,7 @@ final class SettingsSection extends WooCommerceSettingsSection {
 	) {
 		Forms::check_helper_id( $id );
 		Fields::check_id( $id );
-		$this->owner = new Fields( array( $id => true ) );
+		$this->owner = new Fields( array( $id ) );
 	}
 
 	// endregion
