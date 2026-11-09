@@ -183,6 +183,8 @@ The five packages release together under one version, which the [changelog](http
 
 The 2.x contract is every public class, interface, enum, method, property and constant, the protected members of non-final classes, and the hook and priority each public callback method is registered on, unless tagged `@internal`. A `protected(set)` property is contract for reading, by its name and declared type. `@internal`, `private` and protected-on-final members are not contract, and an `@internal` symbol serves only its own package, because a caret edge installs a package beside an older or newer release of another. Hook names and their arguments, option and meta keys, REST routes, and the path and return value of bootstrap's `load.php` are contract too.
 
+`SettingsSection` follows WooCommerce's experimental settings API, so the methods it inherits, `get_settings_ui_page()`, `get_script_handles()` and `get_save_adapter()`, follow WooCommerce and may change in a minor release.
+
 Releases follow SemVer on this contract from the first tag: a break of it ships as the next major, and internals change in any release. Plugins on different majors run side by side, because each ships its own prefixed copy.
 
 This package is developed in the [wordpress-framework](https://github.com/ahegyes/wordpress-framework) monorepo, which holds its issues and pull requests.
