@@ -40,7 +40,7 @@ final class WooCommerceLogger extends AbstractLogger {
 	 *
 	 * @param   string                    $source    The source that files every record under the plugin in WooCommerce's log.
 	 * @param   string|null               $threshold Optional. The lowest level to log, which replaces the default of warning, or of every level under WP_DEBUG. Default is null.
-	 * @param   \WC_Logger_Interface|null $logger    Optional. The WooCommerce logger to write to. Default is null, which resolves WooCommerce's logger on the first record, so construction never needs WooCommerce.
+	 * @param   \WC_Logger_Interface|null $logger    Optional. The WooCommerce logger to write to. Default is null, which resolves WooCommerce's logger on the first record, so construction never needs WooCommerce. The error log fallback follows WooCommerce's logging settings, whichever logger is given.
 	 *
 	 * @throws  PsrInvalidArgumentException Thrown when the threshold is not a PSR-3 level.
 	 */

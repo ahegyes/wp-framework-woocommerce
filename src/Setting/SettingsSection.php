@@ -56,7 +56,7 @@ final class SettingsSection extends WooCommerceSettingsSection {
 	 * @param   Section                          $section    The id of the tab the section belongs to, and the section's label.
 	 * @param   SectionFieldsDefinitionInterface $definition The definition of the section's fields, which the section asks for once, when WooCommerce first asks for them.
 	 *
-	 * @throws  InvalidArgumentException Thrown when the id is not a valid key.
+	 * @throws  InvalidArgumentException Thrown when the id is not a valid key or one WooCommerce keeps as it is.
 	 */
 	public function __construct(
 		protected string $id,
@@ -64,6 +64,7 @@ final class SettingsSection extends WooCommerceSettingsSection {
 		protected SectionFieldsDefinitionInterface $definition
 	) {
 		Forms::check_helper_id( $id );
+		Fields::check_id( $id );
 		$this->owner = new Fields( array( $id => true ) );
 	}
 

@@ -65,7 +65,7 @@ final class SettingsTab extends \WC_Settings_Page {
 	 * @param   Tab                              $tab        The tab's label and the labels of its sections by id.
 	 * @param   SectionFieldsDefinitionInterface $definition The definition of the sections' fields, which the tab asks for once per section, when WooCommerce first asks for them.
 	 *
-	 * @throws  InvalidArgumentException Thrown when the id is not a valid key.
+	 * @throws  InvalidArgumentException Thrown when the id is not a valid key, or it or a section key is not one WooCommerce keeps as it is.
 	 */
 	public function __construct(
 		string $id,
@@ -73,6 +73,9 @@ final class SettingsTab extends \WC_Settings_Page {
 		protected SectionFieldsDefinitionInterface $definition
 	) {
 		Forms::check_helper_id( $id );
+		foreach ( array( $id, ...\array_map( 'strval', \array_keys( $tab['sections'] ) ) ) as $checked ) {
+			Fields::check_id( $checked );
+		}
 
 		$this->id       = $id;
 		$this->label    = $tab['label'];

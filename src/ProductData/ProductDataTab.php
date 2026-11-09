@@ -222,7 +222,7 @@ final class ProductDataTab {
 	}
 
 	/**
-	 * Prints the field's row with its stored value, through WooCommerce's function for its type, or through Forms::render_control() for a render callable or a checkboxes group.
+	 * Prints the field's row with its stored value, through WooCommerce's function for its type, or through Forms::render_control() for a render callable, radios or checkboxes.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -287,8 +287,6 @@ final class ProductDataTab {
 				woocommerce_wp_select( $field );
 				break;
 			case 'radio':
-				woocommerce_wp_radio( $field );
-				break;
 			case 'checkboxes':
 				// The row's legend names the group, so Forms draws the choices without one of its own and with the description as their help.
 				$group = array(

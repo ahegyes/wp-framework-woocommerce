@@ -4,6 +4,7 @@ namespace DeepWebSolutions\Framework\WooCommerce\Setting;
 
 use DeepWebSolutions\Framework\Core\Storage\StoredData;
 use DeepWebSolutions\Framework\Settings\Forms;
+use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -63,6 +64,24 @@ final class Fields {
 	public function register_hooks( string $tab_id ): void {
 		add_filter( "woocommerce_get_settings_$tab_id", array( $this, 'claim' ), \PHP_INT_MAX, 2 );
 		add_filter( 'woocommerce_admin_settings_sanitize_option', array( $this, 'sanitize_option' ), 10, 3 );
+	}
+
+	/**
+	 * Throws unless WooCommerce keeps the tab or section id as it is, because it passes the ids through sanitize_title() and the fields are claimed by the ids it passes.
+	 *
+	 * @since   2.0.0
+	 * @version 2.0.0
+	 *
+	 * @param   string $id The tab or section id.
+	 *
+	 * @throws  InvalidArgumentException Thrown when sanitize_title() changes the id.
+	 *
+	 * @return  void
+	 */
+	public static function check_id( string $id ): void {
+		if ( sanitize_title( $id ) !== $id ) {
+			throw new InvalidArgumentException( "Id '$id' is not one that WooCommerce's sanitize_title() keeps as it is." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Developer-facing, never rendered.
+		}
 	}
 
 	// endregion
