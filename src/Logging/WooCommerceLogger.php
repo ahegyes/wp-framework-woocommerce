@@ -103,8 +103,12 @@ final class WooCommerceLogger extends AbstractLogger {
 		$this->logger ??= \function_exists( 'wc_get_logger' ) ? wc_get_logger() : null;
 		$this->logger?->log( $level, $message, array( 'source' => $this->source ) + $encoded );
 
+		if ( $severity < self::SEVERITIES[ PsrLogLevel::ERROR ] ) {
+			return;
+		}
+
 		$dropped = ! \class_exists( LoggingUtil::class ) || ! LoggingUtil::logging_is_enabled() || \WC_Log_Levels::get_level_severity( LoggingUtil::get_level_threshold() ) > $severity;
-		if ( $severity >= self::SEVERITIES[ PsrLogLevel::ERROR ] && $dropped ) {
+		if ( $dropped ) {
 			\error_log( self::format_record( $this->source, $level, $message, $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Errors must stay visible when WooCommerce drops them.
 		}
 	}
