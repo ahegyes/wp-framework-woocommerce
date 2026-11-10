@@ -4,7 +4,7 @@ The framework's settings, edit-screen and logging helpers carried onto WooCommer
 
 ## Requirements
 
-It builds on wp-framework-settings, which brings wp-framework-core, wp-framework-bootstrap and wp-framework-shared. Its `composer.json` holds its PHP floor under `require.php`, its WordPress floor under `extra.requires-wp` and WooCommerce under `extra.requires-plugins`, which a plugin's `Requires PHP`, `Requires at least` and `Requires Plugins` headers meet. The plugin's own `WC requires at least` header is the WooCommerce floor that `WooCommerceRequirement` checks.
+It builds on wp-framework-settings, which brings wp-framework-core, wp-framework-bootstrap and wp-framework-shared. Its `composer.json` holds its PHP floor under `require.php`, its WordPress floor under `extra.requires-wp`, its WooCommerce floor under `extra.requires-wc` and WooCommerce under `extra.requires-plugins`, which a plugin's `Requires PHP`, `Requires at least`, `WC requires at least` and `Requires Plugins` headers meet. `WooCommerceRequirement` checks the plugin's own `WC requires at least` header at runtime.
 
 ## Installation
 

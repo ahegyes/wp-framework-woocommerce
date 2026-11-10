@@ -18,6 +18,7 @@
 			"dev-trunk": "2.x-dev"
 		},
 		"requires-wp": "7.1",
+		"requires-wc": "11.2",
 		"requires-plugins": [
 			"woocommerce"
 		],
