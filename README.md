@@ -106,7 +106,7 @@ add_action( 'plugins_loaded', 'acme_pw_register_hooks', 15 );
 // ...
 
 function acme_pw_register_hooks(): void {
-	if ( ! new WooCommerceRequirement( ACME_PW_FILE )->check() ) {
+	if ( ! WooCommerceRequirement::check( ACME_PW_FILE ) ) {
 		return;
 	}
 

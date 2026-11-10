@@ -20,12 +20,8 @@ final class WooCommerceRequirement {
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
-	 *
-	 * @param   string $plugin_file The path to the plugin's entry file.
 	 */
-	public function __construct(
-		protected string $plugin_file
-	) {}
+	protected function __construct() {}
 
 	// endregion
 
@@ -39,15 +35,16 @@ final class WooCommerceRequirement {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
+	 * @param   string $plugin_file The path to the plugin's entry file.
+	 *
 	 * @return  bool
 	 */
-	public function check(): bool {
-		$floor = get_file_data( $this->plugin_file, array( 'floor' => 'WC requires at least' ) )['floor'];
+	public static function check( string $plugin_file ): bool {
+		$floor = get_file_data( $plugin_file, array( 'floor' => 'WC requires at least' ) )['floor'];
 		if ( \defined( 'WC_VERSION' ) && ( '' === $floor || \version_compare( WC_VERSION, $floor, '>=' ) ) ) {
 			return true;
 		}
 
-		$plugin_file = $this->plugin_file;
 		add_action(
 			'all_admin_notices',
 			static function () use ( $plugin_file, $floor ): void {
