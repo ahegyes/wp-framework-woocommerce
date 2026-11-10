@@ -188,7 +188,7 @@ final class Packing implements ProductDataTabDefinitionInterface, SectionFieldsD
 }
 ```
 
-The plugin's `uninstall.php` runs core's `Uninstaller` as core's README shows, and passes `MetaTypes::DEFINITIONS`, so that a footprint can name the `order` and `order_item` meta kinds, whose tables WordPress knows only while WooCommerce is loaded:
+The plugin's `uninstall.php` runs core's `Uninstaller` as core's README shows, and passes `MetaTypes::DEFINITIONS`, so that a footprint can name the `order` and `order_item` meta kinds, whose WooCommerce tables the definitions name, so the uninstall finds them while WooCommerce is inactive:
 
 ```php
 Uninstaller::run(

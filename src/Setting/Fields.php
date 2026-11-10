@@ -121,7 +121,7 @@ final class Fields {
 	/**
 	 * Returns the value to store for an owned field's submission, or null, under which WooCommerce keeps the stored value, and any other option's value unchanged.
 	 *
-	 * A disabled field and a field the form did not post are never saved.
+	 * A disabled field is never saved, and a field the form did not post keeps its value, but for a checkbox or multiselect, which WooCommerce's form posts nothing for when cleared, so it is stored cleared.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
