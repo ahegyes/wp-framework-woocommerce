@@ -181,7 +181,7 @@ final class Fields {
 
 		echo '<tr class="' . esc_attr( $row_class ) . '"><th scope="row" class="titledesc">';
 		// A group's legend names it, so its row heading is plain text.
-		echo Forms::is_group( $field ) ? esc_html( $field['title'] ) : '<label for="' . esc_attr( $id ) . '">' . esc_html( $field['title'] ) . '</label>';
+		echo Forms::is_group( $field ) ? esc_html( $field['title'] ) : '<label for="' . Forms::escape_attribute( $id ) . '">' . esc_html( $field['title'] ) . '</label>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Forms::escape_attribute() escapes the id as the control's id is.
 		echo '</th><td class="forminp forminp-' . esc_attr( sanitize_title( $field['type'] ) ) . '">';
 		echo Forms::render_control( $field, $resolved['value'] ?? '', $name, $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_control() escapes the control.
 		echo '</td></tr>';
