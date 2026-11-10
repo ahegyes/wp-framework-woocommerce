@@ -17,7 +17,7 @@ use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
  * @version 2.0.0
  *
  * @phpstan-import-type Field from Forms
- * @phpstan-type Section array{tab: string, label: string}
+ * @phpstan-type        Section array{tab: string, label: string}
  */
 final class SettingsSection extends WooCommerceSettingsSection {
 	// region FIELDS AND CONSTANTS

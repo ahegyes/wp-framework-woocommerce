@@ -16,7 +16,7 @@ use DeepWebSolutions\Framework\Shared\Exception\InvalidArgumentException;
  * @version 2.0.0
  *
  * @phpstan-import-type Field from Forms
- * @phpstan-type Tab array{label: string, sections: array<string, string>}
+ * @phpstan-type        Tab array{label: string, sections: array<string, string>}
  */
 final class SettingsTab extends \WC_Settings_Page {
 	// region FIELDS AND CONSTANTS
