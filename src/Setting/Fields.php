@@ -121,7 +121,7 @@ final class Fields {
 	/**
 	 * Returns the value to store for an owned field's submission, or null, under which WooCommerce keeps the stored value, and any other option's value unchanged.
 	 *
-	 * A disabled field and a field the form did not post are never saved. The submission goes through Forms::sanitize_fields(), where a field without validate, a render callable or the checkboxes type keeps WooCommerce's value when it holds only scalars, null and arrays, and a rejection becomes one of WooCommerce's settings errors.
+	 * A disabled field and a field the form did not post are never saved.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -211,9 +211,9 @@ final class Fields {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   mixed $setting The setting.
-	 *
 	 * @phpstan-assert-if-true Field $setting
+	 *
+	 * @param   mixed $setting The setting.
 	 *
 	 * @return  bool
 	 */

@@ -222,7 +222,7 @@ final class ProductDataTab {
 	}
 
 	/**
-	 * Prints the field's row with its stored value, through WooCommerce's function for its type, or through Forms::render_control() for a render callable, radios or checkboxes.
+	 * Prints the field's row in WooCommerce's product data markup, with its stored value.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0

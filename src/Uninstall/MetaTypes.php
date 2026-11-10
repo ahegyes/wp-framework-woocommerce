@@ -16,7 +16,7 @@ final class MetaTypes {
 	/**
 	 * The meta types of WooCommerce's orders and order items, keyed by the names a footprint's meta kinds use.
 	 *
-	 * Order meta lives in post meta and, where WooCommerce created it, in the order meta table. Order item meta lives only in WooCommerce's own table, whose WordPress meta type exists only while WooCommerce is loaded, and plugins are often deleted after WooCommerce is deactivated.
+	 * Order item meta names no WordPress meta type, which exists only while WooCommerce is loaded.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
