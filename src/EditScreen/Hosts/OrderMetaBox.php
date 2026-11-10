@@ -101,7 +101,7 @@ final class OrderMetaBox implements ObjectFormHostInterface {
 	 */
 	#[\Override]
 	public function render_rows( string $title, array $rows ): void {
-		( new PostMetaBox( array() ) )->render_rows( $title, $rows );
+		new PostMetaBox( array() )->render_rows( $title, $rows );
 	}
 
 	// endregion
