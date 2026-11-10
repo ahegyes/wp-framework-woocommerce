@@ -19,14 +19,14 @@ final class WooCommerceLogger extends AbstractLogger {
 	// region FIELDS AND CONSTANTS
 
 	/**
-	 * The severity of the lowest level the threshold logs, or null for the WP_DEBUG default.
+	 * The severity of the lowest level logged, or null for the WP_DEBUG default.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
 	 * @var     int|null
 	 */
-	protected ?int $floor = null;
+	protected ?int $threshold = null;
 
 	// endregion
 
@@ -50,7 +50,7 @@ final class WooCommerceLogger extends AbstractLogger {
 		protected ?\WC_Logger_Interface $logger = null
 	) {
 		if ( ! \is_null( $threshold ) ) {
-			$this->floor = self::get_severity( $threshold );
+			$this->threshold = self::get_severity( $threshold );
 		}
 	}
 
@@ -77,7 +77,7 @@ final class WooCommerceLogger extends AbstractLogger {
 	#[\Override]
 	public function log( mixed $level, string|\Stringable $message, array $context = array() ): void {
 		$severity = self::get_severity( $level );
-		if ( $severity < ( $this->floor ?? self::get_default_threshold() ) ) {
+		if ( $severity < ( $this->threshold ?? self::get_default_threshold() ) ) {
 			return;
 		}
 
