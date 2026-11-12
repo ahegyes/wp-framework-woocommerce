@@ -114,7 +114,7 @@ function acme_pw_register_hooks(): void {
 		return;
 	}
 
-	new ProductDataTab( Packing::PREFIX, new Packing() )->register_hooks();
+	new ProductDataTab( Packing::SLUG, Packing::PREFIX, new Packing() )->register_hooks();
 	add_filter( 'woocommerce_get_settings_pages', 'acme_pw_add_settings_tab' );
 	add_action( 'woocommerce_update_options_' . Packing::PREFIX, 'acme_pw_log_settings_save' );
 }
