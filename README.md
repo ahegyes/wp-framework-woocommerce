@@ -40,7 +40,7 @@ WordPress loads every plugin into one PHP process, so each plugin ships the fram
   "require-dev": {
     "ahegyes/wordpress-configs": "dev-trunk",
     "humbug/php-scoper": "^0.18",
-    "php-stubs/woocommerce-stubs": "^11.2"
+    "php-stubs/woocommerce-stubs": "^11.3"
   },
   "repositories": [
     { "type": "vcs", "url": "https://github.com/ahegyes/wordpress-configs" }
