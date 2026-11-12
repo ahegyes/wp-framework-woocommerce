@@ -42,12 +42,14 @@ final class ProductDataTab {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   string                            $id         The tab's key among the product data tabs, which also prefixes its panel's HTML id and its groups filter.
+	 * @param   non-empty-string                  $slug       The plugin's slug, whose dashes become underscores in the root of the tab's groups filter.
+	 * @param   string                            $id         The tab's key among the product data tabs, which also prefixes its panel's HTML id.
 	 * @param   ProductDataTabDefinitionInterface $definition The definition, which the tab asks for once per product, on first use after init.
 	 *
 	 * @throws  InvalidArgumentException Thrown when the id is not a valid key.
 	 */
 	public function __construct(
+		protected string $slug,
 		protected string $id,
 		protected ProductDataTabDefinitionInterface $definition
 	) {
@@ -217,8 +219,9 @@ final class ProductDataTab {
 		 *
 		 * @param   list<Group> $groups  The tab's groups.
 		 * @param   \WC_Product $product The product being edited or saved.
+		 * @param   string      $tab_id  The tab's key among the product data tabs.
 		 */
-		return apply_filters( "$this->id/product_data_tab/groups", $tab['groups'], $product );
+		return apply_filters( \str_replace( '-', '_', $this->slug ) . '/product_data_tab/groups', $tab['groups'], $product, $this->id );
 	}
 
 	/**
