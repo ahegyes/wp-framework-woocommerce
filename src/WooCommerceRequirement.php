@@ -3,6 +3,7 @@
 namespace DeepWebSolutions\Framework\WooCommerce;
 
 use DeepWebSolutions\Framework\Bootstrap\Requirements;
+use DeepWebSolutions\Framework\Core\PluginIdentity;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -35,21 +36,21 @@ final class WooCommerceRequirement {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   string $plugin_file The path to the plugin's entry file.
+	 * @param   PluginIdentity $identity The plugin's identity, whose entry file holds the WC requires at least header.
 	 *
 	 * @return  bool
 	 */
-	public static function check( string $plugin_file ): bool {
-		$floor = get_file_data( $plugin_file, array( 'floor' => 'WC requires at least' ) )['floor'];
+	public static function check( PluginIdentity $identity ): bool {
+		$floor = get_file_data( $identity->file, array( 'floor' => 'WC requires at least' ) )['floor'];
 		if ( \defined( 'WC_VERSION' ) && ( '' === $floor || \version_compare( WC_VERSION, $floor, '>=' ) ) ) {
 			return true;
 		}
 
 		add_action(
 			'all_admin_notices',
-			static function () use ( $plugin_file, $floor ): void {
+			static function () use ( $identity, $floor ): void {
 				if ( ! \defined( 'WC_VERSION' ) ) {
-					$requirements = validate_plugin_requirements( plugin_basename( $plugin_file ) ); // WordPress core names a missing WooCommerce only for a plugin whose Requires Plugins header lists it.
+					$requirements = validate_plugin_requirements( plugin_basename( $identity->file ) ); // WordPress core names a missing WooCommerce only for a plugin whose Requires Plugins header lists it.
 					if ( is_wp_error( $requirements ) ) {
 						Requirements::print_admin_notice( $requirements );
 					}
@@ -60,7 +61,7 @@ final class WooCommerceRequirement {
 					\sprintf(
 						/* translators: 1: The plugin's name. 2: The lowest WooCommerce version the plugin runs on. */
 						esc_html__( '%1$s needs WooCommerce %2$s or later, so its features stay off until WooCommerce is updated.', 'wp-framework' ),
-						esc_html( get_plugin_data( $plugin_file, false )['Name'] ),
+						esc_html( get_plugin_data( $identity->file, false )['Name'] ),
 						esc_html( $floor )
 					)
 				);

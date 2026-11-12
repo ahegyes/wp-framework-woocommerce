@@ -4,6 +4,7 @@ namespace DeepWebSolutions\Framework\WooCommerce\Logging;
 
 use Automattic\WooCommerce\Utilities\LoggingUtil;
 use DeepWebSolutions\Framework\Core\Logging\AbstractLogger;
+use DeepWebSolutions\Framework\Core\PluginIdentity;
 use Psr\Log\InvalidArgumentException as PsrInvalidArgumentException;
 use Psr\Log\LogLevel as PsrLogLevel;
 
@@ -38,14 +39,14 @@ final class WooCommerceLogger extends AbstractLogger {
 	 * @since   2.0.0
 	 * @version 2.0.0
 	 *
-	 * @param   string                    $source    The source that files every record under the plugin in WooCommerce's log.
+	 * @param   PluginIdentity            $identity  The identity of the plugin, whose slug is the source that files every record under it in WooCommerce's log.
 	 * @param   string|null               $threshold Optional. The lowest level to log, which replaces the default of warning, or of every level under WP_DEBUG. Default is null.
 	 * @param   \WC_Logger_Interface|null $logger    Optional. The WooCommerce logger to write to. Default is null, which resolves WooCommerce's logger on the first record, so construction never needs WooCommerce. The error log fallback follows WooCommerce's logging settings, whichever logger is given.
 	 *
 	 * @throws  PsrInvalidArgumentException Thrown when the threshold is not a PSR-3 level.
 	 */
 	public function __construct(
-		protected string $source,
+		protected PluginIdentity $identity,
 		?string $threshold = null,
 		protected ?\WC_Logger_Interface $logger = null
 	) {
@@ -101,7 +102,7 @@ final class WooCommerceLogger extends AbstractLogger {
 
 		$message        = self::interpolate( (string) $message, $context );
 		$this->logger ??= \function_exists( 'wc_get_logger' ) ? wc_get_logger() : null;
-		$this->logger?->log( $level, $message, array( 'source' => $this->source ) + $encoded );
+		$this->logger?->log( $level, $message, array( 'source' => $this->identity->slug ) + $encoded );
 
 		if ( $severity < self::SEVERITIES[ PsrLogLevel::ERROR ] ) {
 			return;
@@ -109,7 +110,7 @@ final class WooCommerceLogger extends AbstractLogger {
 
 		$dropped = ! \class_exists( LoggingUtil::class ) || ! LoggingUtil::logging_is_enabled() || \WC_Log_Levels::get_level_severity( LoggingUtil::get_level_threshold() ) > $severity;
 		if ( $dropped ) {
-			\error_log( self::format_record( $this->source, $level, $message, $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Errors must stay visible when WooCommerce drops them.
+			\error_log( self::format_record( $this->identity, $level, $message, $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Errors must stay visible when WooCommerce drops them.
 		}
 	}
 
