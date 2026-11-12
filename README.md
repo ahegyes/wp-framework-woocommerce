@@ -103,42 +103,39 @@ use Acme\PersonaWooCommerce\Scoped\DeepWebSolutions\Framework\WooCommerce\WooCom
 
 defined( 'ABSPATH' ) || exit;
 
-require_once __DIR__ . '/includes/options.php';
+add_action(
+	'plugins_loaded',
+	static function (): void {
+		if ( ! WooCommerceRequirement::check( ACME_PW_FILE ) ) {
+			return;
+		}
 
-add_action( 'plugins_loaded', 'acme_pw_register_hooks', 15 );
+		new ProductDataTab( Packing::SLUG, Packing::PREFIX, new Packing() )->register_hooks();
+		add_filter(
+			'woocommerce_get_settings_pages',
+			static function ( array $pages ): array {
+				// WooCommerce's settings page class, which the tab extends, exists only once this filter runs.
+				$pages[] = new SettingsTab(
+					Packing::PREFIX,
+					array(
+						'label'    => __( 'Packing', 'acme-persona-woocommerce' ),
+						'sections' => array( '' => __( 'General', 'acme-persona-woocommerce' ) ),
+					),
+					new Packing()
+				);
 
-// ...
-
-function acme_pw_register_hooks(): void {
-	if ( ! WooCommerceRequirement::check( ACME_PW_FILE ) ) {
-		return;
-	}
-
-	new ProductDataTab( Packing::SLUG, Packing::PREFIX, new Packing() )->register_hooks();
-	add_filter( 'woocommerce_get_settings_pages', 'acme_pw_add_settings_tab' );
-	add_action( 'woocommerce_update_options_' . Packing::PREFIX, 'acme_pw_log_settings_save' );
-}
-
-// ...
-
-function acme_pw_add_settings_tab( array $pages ): array {
-	$pages[] = new SettingsTab(
-		Packing::PREFIX,
-		array(
-			'label'    => __( 'Packing', 'acme-persona-woocommerce' ),
-			'sections' => array( '' => __( 'General', 'acme-persona-woocommerce' ) ),
-		),
-		new Packing()
-	);
-
-	return $pages;
-}
-
-// ...
-
-function acme_pw_log_settings_save(): void {
-	new WooCommerceLogger( 'acme-persona-woocommerce', 'info' )->info( 'The packing settings were saved.' );
-}
+				return $pages;
+			}
+		);
+		add_action(
+			'woocommerce_update_options_' . Packing::PREFIX,
+			static function (): void {
+				new WooCommerceLogger( 'acme-persona-woocommerce', 'info' )->info( 'The packing settings were saved.' );
+			}
+		);
+	},
+	15
+);
 ```
 
 A definition object declares both tabs' fields as data, which WooCommerce renders, validates and saves:
@@ -157,7 +154,7 @@ final class Packing implements ProductDataTabDefinitionInterface, SectionFieldsD
 			),
 			array(
 				'type'  => 'checkbox',
-				'id'    => ACME_PW_OPTION_DELETE_DATA,
+				'id'    => Options::DELETE_DATA,
 				'title' => __( 'Data on uninstall', 'acme-persona-woocommerce' ),
 				'desc'  => __( 'Delete the packing data when the plugin is uninstalled', 'acme-persona-woocommerce' ),
 			),
@@ -175,7 +172,7 @@ final class Packing implements ProductDataTabDefinitionInterface, SectionFieldsD
 					'fields' => array(
 						array(
 							'type'  => 'text',
-							'id'    => ACME_PW_META_BOX,
+							'id'    => self::META_BOX,
 							'label' => __( 'Box', 'acme-persona-woocommerce' ),
 						),
 					),
