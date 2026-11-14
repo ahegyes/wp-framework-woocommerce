@@ -151,7 +151,7 @@ final class Packing implements ProductDataTabDefinitionInterface, SectionFieldsD
 		return array(
 			array(
 				'type'  => 'text',
-				'id'    => self::PREFIX . '_default_box',
+				'id'    => 'acme_pw_default_box',
 				'title' => __( 'Default box', 'acme-persona-woocommerce' ),
 			),
 			array(
