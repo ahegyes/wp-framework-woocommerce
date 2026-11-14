@@ -89,7 +89,9 @@ final class Fields {
 	// region HOOKS
 
 	/**
-	 * Takes ownership of the fields of one of the helper's sections, as WooCommerce's settings filter leaves them, and hooks the row printer to each type among them that WooCommerce does not draw and Forms does.
+	 * Takes ownership of the fields of one of the helper's sections, as WooCommerce's settings filter leaves them, gives each one WooCommerce draws the attributes Forms renders its type with unless it sets them, and hooks the row printer to each type among them that WooCommerce does not draw and Forms does.
+	 *
+	 * WooCommerce prints only a field's own attributes, so a number field without a step would take the browser's step of 1 while its save accepts any.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -104,15 +106,19 @@ final class Fields {
 			return $settings;
 		}
 
-		foreach ( $settings as $setting ) {
+		foreach ( $settings as $index => $setting ) {
 			if ( ! self::is_field( $setting ) ) {
 				continue;
 			}
 
-			$this->owned[ $setting['id'] ?? '' ] = $setting; // is_field() has checked the id, which the Field shape leaves optional.
 			if ( self::is_drawn_by_forms( $setting ) ) {
 				add_action( "woocommerce_admin_field_{$setting['type']}", array( $this, 'render_row' ) );
+			} elseif ( isset( Forms::DEFAULT_CUSTOM_ATTRIBUTES[ $setting['type'] ] ) ) {
+				$setting['custom_attributes'] = ( $setting['custom_attributes'] ?? array() ) + Forms::DEFAULT_CUSTOM_ATTRIBUTES[ $setting['type'] ];
+				$settings[ $index ]           = $setting;
 			}
+
+			$this->owned[ $setting['id'] ?? '' ] = $setting; // is_field() has checked the id, which the Field shape leaves optional.
 		}
 
 		return $settings;
@@ -121,7 +127,7 @@ final class Fields {
 	/**
 	 * Returns the value to store for an owned field's submission, or null, under which WooCommerce keeps the stored value, and any other option's value unchanged.
 	 *
-	 * A disabled field is never saved, and a field the form did not post keeps its value, but for a checkbox or multiselect, which WooCommerce's form posts nothing for when cleared, so it is stored cleared.
+	 * A disabled field is never saved, and a field the form did not post keeps its value, but for a checkbox or multiselect, which WooCommerce's form posts nothing for when cleared, so it is stored cleared. A number field without validate goes through Forms' number sanitizer, which holds it to its min, max and step, and any other field WooCommerce draws without validate stores WooCommerce's value.
 	 *
 	 * @since   2.0.0
 	 * @version 2.0.0
@@ -144,7 +150,7 @@ final class Fields {
 			'multiselect', 'multi_select_countries' => array(),
 			default                                 => null,
 		};
-		if ( ! isset( $field['validate'] ) && ! self::is_drawn_by_forms( $field ) ) {
+		if ( ! isset( $field['validate'] ) && ! self::is_drawn_by_forms( $field ) && 'number' !== $field['type'] ) {
 			$field['validate'] = static fn (): mixed => StoredData::is_storable_data( $value ) ? $value : null;
 		}
 
